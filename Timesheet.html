@@ -913,7 +913,7 @@
         return `<th title="${t}">${short}</th>`;
       }).join('') +
       '<th>Total</th>' +
-      '<th>Commentaire</th>';
+      '<th>Commentaire*</th>';
     const sprints = PROJECTS.filter(p => p.type === "sprint");
     const regies = PROJECTS.filter(p => p.type === "regie");
     if (sprints.length > 0) {
@@ -967,7 +967,7 @@
     commentField.dataset.row = rowId;
     commentField.rows = 1;
     commentField.maxLength = 1000;
-    commentField.placeholder = "*";
+    commentField.placeholder = "";
     commentField.addEventListener("input", () => { autoGrowTextarea(commentField); onChange(); });
     commentTd.appendChild(commentField);
     tr.appendChild(commentTd);
