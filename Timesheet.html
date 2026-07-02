@@ -84,6 +84,17 @@
   table.timesheet input[type="number"]:focus { background: #FFFBEB; outline: 1px solid var(--teal); border-radius: 4px; }
   table.timesheet tr.has-entry td.label { background: #E0F2F4; border-left-color: var(--teal); }
   table.timesheet tr.has-entry td.label.regie { background: #FFF1D6; border-left-color: var(--amber); }
+  /* Billing per-line comment column */
+  table.timesheet td.comment-cell { background: white; min-width: 200px; padding: 3px; vertical-align: top; }
+  table.timesheet textarea[data-kind="billing-comment"] {
+    border: 1px solid transparent; background: transparent; width: 100%; min-width: 180px;
+    font-family: inherit; font-size: 12.5px; color: var(--navy); resize: vertical;
+    min-height: 34px; padding: 6px 8px; overflow-y: hidden; border-radius: 4px;
+  }
+  table.timesheet textarea[data-kind="billing-comment"]:focus { background: #FFFBEB; outline: 1px solid var(--teal); }
+  table.timesheet td.comment-cell.needs-comment { background: var(--red-bg); }
+  table.timesheet td.comment-cell.needs-comment textarea { border-color: var(--red); color: var(--red); }
+  table.timesheet td.comment-cell.needs-comment textarea::placeholder { color: var(--red); opacity: 0.8; }
   table.timesheet tr.divider td { background: var(--navy-dark); color: white; padding: 8px 14px; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
   .checkbox-row { display: flex; gap: 10px; flex-wrap: wrap; }
   .checkbox-row label { display: flex; align-items: center; gap: 8px; background: var(--sub-bg); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--navy); font-size: 13px; border: 1px solid transparent; transition: all 0.15s; }
@@ -426,7 +437,7 @@
             </tr>
           </thead>
           <tbody id="billing-body">
-            <tr class="loading-row"><td colspan="9"><span class="spinner"></span>Loading projects from Google Sheet…</td></tr>
+            <tr class="loading-row"><td colspan="10"><span class="spinner"></span>Loading projects from Google Sheet…</td></tr>
           </tbody>
         </table>
       </div>
@@ -901,20 +912,21 @@
         const short = t.length > 14 ? t.split(' ')[0] + (t.includes('/') ? '/' + t.split('/')[1].trim().split(' ')[0] : '') : t;
         return `<th title="${t}">${short}</th>`;
       }).join('') +
-      '<th>Total</th>';
+      '<th>Total</th>' +
+      '<th>Commentaire</th>';
     const sprints = PROJECTS.filter(p => p.type === "sprint");
     const regies = PROJECTS.filter(p => p.type === "regie");
     if (sprints.length > 0) {
       const dividerSprint = document.createElement("tr");
       dividerSprint.className = "divider";
-      dividerSprint.innerHTML = `<td colspan="${TASK_TYPES.length + 2}">Sprint projects</td>`;
+      dividerSprint.innerHTML = `<td colspan="${TASK_TYPES.length + 3}">Sprint projects</td>`;
       tbody.appendChild(dividerSprint);
       sprints.forEach((p, i) => addProjectRow(tbody, p, "sprint-" + i));
     }
     if (regies.length > 0) {
       const dividerRegie = document.createElement("tr");
       dividerRegie.className = "divider";
-      dividerRegie.innerHTML = `<td colspan="${TASK_TYPES.length + 2}">Régies / Maintenance</td>`;
+      dividerRegie.innerHTML = `<td colspan="${TASK_TYPES.length + 3}">Régies / Maintenance</td>`;
       tbody.appendChild(dividerRegie);
       regies.forEach((p, i) => addProjectRow(tbody, p, "regie-" + i));
     }
@@ -947,6 +959,18 @@
     totalTd.id = "billing-total-" + rowId;
     totalTd.textContent = "0";
     tr.appendChild(totalTd);
+    // Per-line comment cell — mandatory when this row has any hours.
+    const commentTd = document.createElement("td");
+    commentTd.className = "comment-cell";
+    const commentField = document.createElement("textarea");
+    commentField.dataset.kind = "billing-comment";
+    commentField.dataset.row = rowId;
+    commentField.rows = 1;
+    commentField.maxLength = 1000;
+    commentField.placeholder = "Commentaire (obligatoire si temps saisi)";
+    commentField.addEventListener("input", () => { autoGrowTextarea(commentField); onChange(); });
+    commentTd.appendChild(commentField);
+    tr.appendChild(commentTd);
     tbody.appendChild(tr);
   }
   function buildSimpleList(containerId, items, kind) {
@@ -1054,6 +1078,13 @@
       });
       document.getElementById("billing-total-" + rowId).textContent = formatNum(rowSum);
       tr.classList.toggle("has-entry", rowSum > 0);
+      // A billing row with time logged must carry a comment.
+      const commentField = tr.querySelector('textarea[data-kind="billing-comment"]');
+      const commentCell = tr.querySelector('td.comment-cell');
+      if (commentCell) {
+        const needs = rowSum > 0 && (!commentField || !commentField.value.trim());
+        commentCell.classList.toggle("needs-comment", needs);
+      }
       manual += rowSum;
     });
     document.querySelectorAll('input[data-kind="nonbilling"], input[data-kind="timeoff"]').forEach(inp => {
@@ -1146,6 +1177,11 @@
         t.value = "";
         autoGrowTextarea(t);
       });
+      // Clear billing per-line comment textareas
+      document.querySelectorAll('#billing-body textarea[data-kind="billing-comment"]').forEach(t => {
+        t.value = "";
+        autoGrowTextarea(t);
+      });
       recalc();
     }
   });
@@ -1170,11 +1206,15 @@
   });
   function collectFormData() {
     const entries = [];
-    document.querySelectorAll('#billing-body input[data-kind="billing"]').forEach(inp => {
-      const v = parseFloat(inp.value);
-      if (!isNaN(v) && v > 0) {
-        entries.push({ category: "Billing", project: inp.dataset.project, taskOrActivity: inp.dataset.task, hours: v });
-      }
+    document.querySelectorAll('#billing-body tr[data-rowid]').forEach(tr => {
+      const commentField = tr.querySelector('textarea[data-kind="billing-comment"]');
+      const lineComment = commentField ? commentField.value.trim() : '';
+      tr.querySelectorAll('input[data-kind="billing"]').forEach(inp => {
+        const v = parseFloat(inp.value);
+        if (!isNaN(v) && v > 0) {
+          entries.push({ category: "Billing", project: inp.dataset.project, taskOrActivity: inp.dataset.task, hours: v, lineComment: lineComment });
+        }
+      });
     });
     document.querySelectorAll('input[data-kind="nonbilling"]').forEach(inp => {
       const v = parseFloat(inp.value);
@@ -1266,7 +1306,14 @@
         // silently drop the entry — there's no row to put it in anymore.
       } else if (en.category === "Billing") {
         const inp = document.querySelector(`input[data-kind="billing"][data-project="${cssEscape(en.project)}"][data-task="${cssEscape(en.taskOrActivity)}"]`);
-        if (inp) inp.value = val;
+        if (inp) {
+          inp.value = val;
+          if (en.lineComment) {
+            const tr = inp.closest('tr');
+            const cf = tr ? tr.querySelector('textarea[data-kind="billing-comment"]') : null;
+            if (cf && !cf.value) { cf.value = en.lineComment; autoGrowTextarea(cf); }
+          }
+        }
       } else if (en.category === "Non-billing") {
         const inp = document.querySelector(`input[data-kind="nonbilling"][data-activity="${cssEscape(en.taskOrActivity)}"]`);
         if (inp) inp.value = val;
@@ -1278,6 +1325,26 @@
     recalc();
   }
   function cssEscape(s) { return String(s).replace(/(["\\])/g, '\\$1'); }
+  // Returns the first offending comment field (or row) if any billing row has
+  // hours logged but no comment; otherwise null. Also flags the cells red.
+  function validateBillingComments() {
+    let firstBad = null;
+    document.querySelectorAll('#billing-body tr[data-rowid]').forEach(tr => {
+      let rowSum = 0;
+      tr.querySelectorAll('input[data-kind="billing"]').forEach(inp => {
+        const v = parseFloat(inp.value);
+        if (!isNaN(v)) rowSum += v;
+      });
+      const commentField = tr.querySelector('textarea[data-kind="billing-comment"]');
+      const hasComment = commentField && commentField.value.trim().length > 0;
+      if (rowSum > 0 && !hasComment) {
+        const cell = tr.querySelector('td.comment-cell');
+        if (cell) cell.classList.add("needs-comment");
+        if (!firstBad) firstBad = commentField || tr;
+      }
+    });
+    return firstBad;
+  }
   document.getElementById("timesheet-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const submitBtn = document.getElementById("submitBtn");
@@ -1285,6 +1352,13 @@
     if (!validateEmail()) {
       emailInput.focus();
       errMsg.textContent = "Please use a valid @datapilot.fr email address.";
+      return;
+    }
+    const badComment = validateBillingComments();
+    if (badComment) {
+      errMsg.textContent = "Please add a comment for every billing row where you logged time.";
+      badComment.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (badComment.focus) badComment.focus();
       return;
     }
     const data = collectFormData();
@@ -1350,7 +1424,8 @@
     let html = '<thead><tr><th>Category</th><th>Project / Activity</th><th style="text-align:right">Hours</th></tr></thead><tbody>';
     data.entries.forEach(en => {
       const isAutoRow = en.taskOrActivity && en.taskOrActivity.indexOf("(auto)") !== -1;
-      const detail = en.project ? `${en.project} · ${en.taskOrActivity}` : en.taskOrActivity;
+      let detail = en.project ? `${en.project} · ${en.taskOrActivity}` : en.taskOrActivity;
+      if (en.lineComment) detail += ` <span style="color:#6B7280">— ${en.lineComment}</span>`;
       const enHours = (typeof en.hours === 'number') ? en.hours : (en.days || 0) * HOURS_PER_DAY;
       html += `<tr class="${isAutoRow ? 'auto' : ''}"><td>${en.category}</td><td>${detail}</td><td style="text-align:right">${formatNum(enHours)}h</td></tr>`;
     });
