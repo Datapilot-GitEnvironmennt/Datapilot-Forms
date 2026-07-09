@@ -224,7 +224,7 @@
     <span><span class="dot t-regie"></span> Régie</span>
     <span><span class="dot t-adhoc"></span> Ad-hoc</span>
     <span><span class="dot t-autre"></span> Interne/Autre</span>
-    <span><span class="chip lead" style="padding:2px 8px"><span class="avatar">L</span> lead</span></span>
+    <span><span class="chip lead" style="padding:2px 8px"><span class="avatar">L</span> lead</span> (1st person on the Monday card)</span>
   </div>
 </div>
 
@@ -262,16 +262,18 @@
     return String(lead || '').split(/[,;]/).map(s => s.trim()).filter(s => s);
   }
   function membersOf(p) {
-    // union of PersonMap team + Lead, deduped case-insensitively, leads flagged
-    const leads = splitLeads(p.lead);
-    const leadKeys = new Set(leads.map(n => n.toLowerCase()));
+    // p.lead holds the whole Monday "Team" column (comma-separated) — the
+    // board has no separate Lead column. Convention: the FIRST person
+    // listed is the project lead; everyone else is a team member.
+    const names = splitLeads(p.lead);
+    const leadKey = names.length ? names[0].toLowerCase() : '';
     const seen = new Set();
     const out = [];
-    leads.concat(p.team || []).forEach(n => {
+    names.concat(p.team || []).forEach(n => {
       const k = n.toLowerCase();
       if (seen.has(k)) return;
       seen.add(k);
-      out.push({ name: n, isLead: leadKeys.has(k) });
+      out.push({ name: n, isLead: !!leadKey && k === leadKey });
     });
     return out;
   }
