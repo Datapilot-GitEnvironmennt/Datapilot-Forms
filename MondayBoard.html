@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monday Board · Datapilot</title>
+<link rel="icon" type="image/png" href="./datapilot logo design.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0F2A3D;
+    --navy-dark: #081826;
+    --teal: #3FA6B8;
+    --amber: #F5A623;
+    --bg: #FFFCF5;
+    --border: #EAE6DA;
+    --muted: #6B7280;
+    --text: #1A1A1A;
+    --sub-bg: #F7F4EB;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+  }
+  /* Compact top bar */
+  .bar {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(15, 42, 61, 0.2);
+  }
+  .bar img.logo { height: 34px; width: auto; }
+  .bar .title { flex: 1; }
+  .bar .title h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
+  .bar .title p { margin: 0; font-size: 11px; opacity: 0.75; font-weight: 300; }
+  .bar a.btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--amber); color: var(--navy);
+    text-decoration: none; font-size: 12px; font-weight: 700;
+    padding: 8px 16px; border-radius: 8px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    transition: all 0.15s;
+  }
+  .bar a.btn:hover { background: #E5961F; }
+  .bar a.back {
+    color: white; opacity: 0.75; text-decoration: none; font-size: 12px; font-weight: 500;
+  }
+  .bar a.back:hover { opacity: 1; }
+  /* The board area fills everything below the bar */
+  .board-area { flex: 1; position: relative; min-height: 0; }
+  .board-area iframe {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    border: 0;
+    background: white;
+  }
+  /* Setup panel (shown until the embed URL is configured) */
+  .setup {
+    max-width: 720px; margin: 40px auto; padding: 0 20px;
+  }
+  .setup .card {
+    background: white; border: 1px solid var(--border); border-radius: 14px;
+    padding: 30px 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .setup h2 { margin: 0 0 6px 0; font-size: 19px; color: var(--navy); font-weight: 700; }
+  .setup p.lead { margin: 0 0 20px 0; font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+  .setup ol { margin: 0 0 18px 0; padding-left: 22px; }
+  .setup li { font-size: 13.5px; line-height: 1.7; margin-bottom: 10px; color: var(--text); }
+  .setup li b { color: var(--navy); }
+  .setup code {
+    background: var(--sub-bg); border: 1px solid var(--border);
+    padding: 2px 7px; border-radius: 5px;
+    font-size: 12px; font-family: 'SF Mono', Consolas, monospace; color: var(--navy);
+  }
+  .setup .note {
+    background: #FFF7E6; border-left: 4px solid var(--amber);
+    padding: 12px 16px; border-radius: 6px;
+    font-size: 12.5px; color: var(--navy); line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="bar">
+  <img src="./Datapilot_logo.png" alt="Datapilot" class="logo">
+  <div class="title">
+    <h1>Staffing board — Monday</h1>
+    <p>The real Monday board, embedded. Read-only — open Monday to edit.</p>
+  </div>
+  <a class="back" href="./index.html">&larr; All forms</a>
+  <a class="btn" id="open-monday" href="#" target="_blank" rel="noopener">Open in Monday</a>
+</div>
+
+<div class="board-area" id="board-area"></div>
+
+<script>
+  // ==================================================================
+  // CONFIG — two URLs to fill in:
+  //
+  // 1. MONDAY_EMBED_URL — Monday's official embed link for the board.
+  //    How to get it (takes 1 minute, needs board owner/admin):
+  //      a. Open the staffing board in Monday
+  //      b. Click the ⋯ (three dots) at the top right of the board
+  //      c. More actions -> Embed board (on some accounts: Share -> Embed)
+  //      d. Monday shows an <iframe src="https://view.monday.com/embed/...">
+  //         snippet -> copy ONLY the src URL and paste it below.
+  //
+  // 2. MONDAY_BOARD_URL — the normal board URL for the "Open in Monday"
+  //    button (replace YOURACCOUNT with your Monday subdomain).
+  // ==================================================================
+  const MONDAY_EMBED_URL = "<iframe src="https://view.monday.com/embed/1616248424-7480a6b661fef6a03f184ce8d95eb1d2?r=euc1" width=770 height=500 style="border: 0; box-shadow: 5px 5px 56px 0px rgba(0,0,0,0.25);"></iframe>";  // <- paste the view.monday.com/embed/... URL here
+  const MONDAY_BOARD_URL = "https://datapilot-force.monday.com/boards/1616248424/";
+
+  document.getElementById('open-monday').href = MONDAY_BOARD_URL;
+
+  const area = document.getElementById('board-area');
+  if (MONDAY_EMBED_URL && MONDAY_EMBED_URL.indexOf('view.monday.com') !== -1) {
+    const f = document.createElement('iframe');
+    f.src = MONDAY_EMBED_URL;
+    f.allowFullscreen = true;
+    area.appendChild(f);
+  } else {
+    area.innerHTML = `
+      <div class="setup">
+        <div class="card">
+          <h2>One-time setup needed</h2>
+          <p class="lead">This page embeds the real Monday board using Monday's official
+          <b>Embed board</b> feature. Generate the embed link once and paste it into this file:</p>
+          <ol>
+            <li>Open the <b>staffing board</b> in Monday</li>
+            <li>Click the <b>&#8943; (three dots)</b> at the top right of the board</li>
+            <li>Choose <b>More actions &rarr; Embed board</b> (on some accounts it's under <b>Share</b>)</li>
+            <li>Monday shows an iframe snippet &mdash; copy only the URL inside <code>src="..."</code>
+                (it starts with <code>https://view.monday.com/embed/</code>)</li>
+            <li>Open this file (<code>Board.html</code>) and paste that URL into
+                <code>MONDAY_EMBED_URL</code> at the top of the script</li>
+            <li>Also replace <code>YOURACCOUNT</code> in <code>MONDAY_BOARD_URL</code>
+                with your Monday subdomain, then push to GitHub</li>
+          </ol>
+          <div class="note">
+            <b>Good to know:</b> the embedded board is <b>read-only</b> and the embed link is
+            accessible to anyone who has it (no Monday login required to view). Monday blocks
+            embedding the normal logged-in app entirely &mdash; the embed link is the only way
+            to show a board inside another page. To edit, use the "Open in Monday" button.
+          </div>
+        </div>
+      </div>`;
+  }
+</script>
+</body>
+</html>
