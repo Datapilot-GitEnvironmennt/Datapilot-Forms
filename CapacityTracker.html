@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capacity Tracker · Datapilot</title>
+<link rel="icon" type="image/png" href="./datapilot logo design.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0F2A3D;
+    --navy-dark: #081826;
+    --teal: #3FA6B8;
+    --amber: #F5A623;
+    --amber-soft: #FFE4B5;
+    --pink: #D87B89;
+    --bg: #FFFCF5;
+    --card: #FFFFFF;
+    --border: #EAE6DA;
+    --muted: #6B7280;
+    --text: #1A1A1A;
+    --green: #16A34A;
+    --green-bg: #DCFCE7;
+    --red: #DC2626;
+    --red-bg: #FEE2E2;
+    --sub-bg: #F7F4EB;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding-bottom: 60px;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+  header.top {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color: white; padding: 26px 28px; border-radius: 16px;
+    margin-bottom: 18px; display: flex; align-items: center; gap: 24px;
+    box-shadow: 0 4px 16px rgba(15, 42, 61, 0.15);
+  }
+  header.top img.logo { height: 52px; width: auto; flex-shrink: 0; }
+  header.top .header-text { flex: 1; }
+  header.top h1 { margin: 0 0 4px 0; font-size: 21px; font-weight: 700; letter-spacing: -0.5px; }
+  header.top p { margin: 0; font-size: 12.5px; opacity: 0.85; font-weight: 300; }
+  header.top b { color: var(--amber); font-weight: 600; }
+  .header-stats { display: flex; gap: 22px; }
+  .hstat { text-align: center; }
+  .hstat .n { font-size: 22px; font-weight: 700; color: var(--amber); }
+  .hstat .l { font-size: 9.5px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
+
+  .toolbar {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 16px; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .tabs { display: flex; background: var(--sub-bg); border-radius: 9px; padding: 3px; }
+  .tabs button {
+    border: 0; background: transparent; padding: 8px 16px; border-radius: 7px;
+    font-family: inherit; font-size: 13px; font-weight: 600; color: var(--muted);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tabs button.active { background: var(--navy); color: white; }
+  .me-picker { display: flex; align-items: center; gap: 8px; }
+  .me-picker label { font-size: 12px; font-weight: 600; color: var(--navy); }
+  .me-picker select {
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    font-family: inherit; font-size: 13px; background: white; min-width: 160px;
+  }
+  .chips { display: flex; gap: 6px; align-items: center; }
+  .chips .lbl { font-size: 11px; color: var(--muted); font-weight: 600; }
+  .chips button {
+    border: 1px solid var(--border); background: white; padding: 6px 12px;
+    border-radius: 18px; font-family: inherit; font-size: 12px; font-weight: 500;
+    color: var(--navy); cursor: pointer; transition: all 0.15s;
+  }
+  .chips button.on { background: var(--navy); color: white; border-color: var(--navy); }
+  button.refresh {
+    border: 0; background: var(--amber); color: var(--navy); padding: 8px 16px;
+    border-radius: 8px; font-family: inherit; font-size: 12px; font-weight: 700;
+    cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
+    box-shadow: 0 2px 6px rgba(245,166,35,0.3);
+  }
+  button.refresh:hover { background: #E5961F; }
+  button.refresh:disabled { background: #E5E7EB; color: #9CA3AF; cursor: wait; box-shadow: none; }
+  .meta { font-size: 11px; color: var(--muted); font-style: italic; margin-left: auto; }
+
+  .legend { display: flex; gap: 16px; margin: 0 2px 14px 2px; font-size: 11.5px; color: var(--muted); flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+
+  /* ---- GRID ---- */
+  .grid-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  table.cap { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 640px; }
+  table.cap th, table.cap td { border-bottom: 1px solid var(--border); }
+  table.cap thead th {
+    background: var(--navy); color: white; padding: 11px 12px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600;
+    text-align: center; position: sticky; top: 0; z-index: 2;
+  }
+  table.cap thead th.person-col { text-align: left; }
+  table.cap thead th .wk-badge {
+    display: block; font-size: 9px; color: var(--amber); letter-spacing: 0.8px;
+    margin-top: 2px; font-weight: 700;
+  }
+  table.cap td.person-cell {
+    padding: 10px 14px; font-size: 13px; font-weight: 500; color: var(--navy);
+    background: var(--sub-bg); white-space: nowrap;
+    position: sticky; left: 0; z-index: 1;
+    border-right: 1px solid var(--border);
+  }
+  table.cap tr.me td.person-cell { border-left: 4px solid var(--amber); background: #FFF6E3; }
+  table.cap td.week-cell {
+    padding: 0; text-align: center; min-width: 130px; background: white;
+  }
+  .cellbtn {
+    display: block; width: 100%; height: 100%; padding: 10px 8px;
+    border: 0; background: transparent; cursor: pointer; font-family: inherit;
+    transition: background 0.12s;
+  }
+  .cellbtn:hover { background: #F0F7FA; }
+  .cellbtn .tot { font-size: 14px; font-weight: 700; color: var(--navy); }
+  .cellbtn .sub { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+  .cellbtn .plus { font-size: 18px; color: #C9C3B4; font-weight: 300; }
+  .cellbtn:hover .plus { color: var(--teal); }
+  td.week-cell.over { background: var(--red-bg); }
+  td.week-cell.over .tot { color: var(--red); }
+  td.week-cell.conge { background: #F3F4F6; }
+
+  /* ---- AVAILABILITY VIEW ---- */
+  .avail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .avail-col {
+    background: white; border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .avail-col h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--navy); display: flex; justify-content: space-between; }
+  .avail-col h3 .cnt { color: var(--muted); font-weight: 500; }
+  .avail-col .pill {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--sub-bg); border: 1px solid var(--border);
+    padding: 7px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 500;
+    color: var(--navy); margin-bottom: 6px;
+  }
+  .avail-col .pill .d { font-size: 11px; color: var(--muted); }
+  .avail-empty { font-size: 12px; color: var(--muted); font-style: italic; }
+
+  /* ---- MODAL ---- */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(8, 24, 38, 0.55);
+    display: none; align-items: flex-start; justify-content: center;
+    padding: 40px 16px; z-index: 100; overflow-y: auto;
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: white; border-radius: 16px; width: 100%; max-width: 640px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden;
+  }
+  .modal .mhead {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color: white; padding: 18px 24px; display: flex; align-items: center; gap: 12px;
+  }
+  .modal .mhead .t { flex: 1; }
+  .modal .mhead h2 { margin: 0; font-size: 16px; font-weight: 700; }
+  .modal .mhead p { margin: 2px 0 0 0; font-size: 12px; opacity: 0.8; }
+  .modal .mhead button {
+    border: 0; background: rgba(255,255,255,0.12); color: white;
+    width: 32px; height: 32px; border-radius: 8px; font-size: 16px; cursor: pointer;
+  }
+  .modal .mbody { padding: 20px 24px; }
+  .mlabel { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--navy); margin: 0 0 8px 0; }
+  .avail-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .avail-btns button {
+    flex: 1; min-width: 110px; border: 1.5px solid var(--border); background: white;
+    padding: 10px 8px; border-radius: 10px; font-family: inherit; font-size: 12.5px;
+    font-weight: 600; color: var(--navy); cursor: pointer; transition: all 0.15s;
+  }
+  .avail-btns button:hover { border-color: var(--teal); }
+  .avail-btns button.sel { border-color: var(--navy); background: var(--navy); color: white; }
+  .lines { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .line {
+    display: grid; grid-template-columns: 1.6fr 84px 1.4fr 34px; gap: 8px; align-items: center;
+  }
+  .line select, .line input {
+    padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px;
+    font-family: inherit; font-size: 12.5px; background: white; width: 100%;
+  }
+  .line input[type="number"] { text-align: center; font-weight: 600; }
+  .line input:focus, .line select:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(63,166,184,0.15); }
+  .line .del {
+    border: 0; background: var(--sub-bg); color: var(--muted); border-radius: 8px;
+    width: 34px; height: 36px; cursor: pointer; font-size: 14px;
+  }
+  .line .del:hover { background: var(--red-bg); color: var(--red); }
+  .line-headers { display: grid; grid-template-columns: 1.6fr 84px 1.4fr 34px; gap: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); font-weight: 600; margin-bottom: 6px; padding: 0 2px; }
+  button.addline {
+    border: 1px dashed var(--border); background: var(--sub-bg); color: var(--navy);
+    padding: 9px 14px; border-radius: 9px; font-family: inherit; font-size: 12px;
+    font-weight: 600; cursor: pointer; width: 100%;
+  }
+  button.addline:hover { border-color: var(--teal); color: var(--teal); }
+  .mtotal {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 16px; padding: 12px 16px; background: var(--sub-bg); border-radius: 10px;
+    font-size: 13px; font-weight: 600; color: var(--navy);
+  }
+  .mtotal .v { font-size: 17px; font-weight: 700; }
+  .mtotal.over { background: var(--red-bg); }
+  .mtotal.over .v { color: var(--red); }
+  .mwarn { font-size: 11.5px; color: var(--red); font-weight: 500; min-height: 16px; margin-top: 6px; }
+  .mfoot { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+  .mfoot button {
+    padding: 11px 22px; border-radius: 9px; font-family: inherit; font-weight: 700;
+    font-size: 12.5px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; border: 0;
+  }
+  .mfoot .cancel { background: white; color: var(--navy); border: 2px solid var(--border); }
+  .mfoot .save { background: var(--amber); color: var(--navy); box-shadow: 0 2px 8px rgba(245,166,35,0.3); }
+  .mfoot .save:hover { background: #E5961F; }
+  .mfoot .save:disabled { background: #E5E7EB; color: #9CA3AF; cursor: wait; box-shadow: none; }
+
+  .state { text-align: center; padding: 60px 20px; color: var(--muted); font-style: italic; }
+  .state.error { color: var(--red); font-style: normal; font-weight: 500; }
+  .spinner {
+    display: inline-block; width: 18px; height: 18px;
+    border: 2px solid var(--border); border-top-color: var(--teal);
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+    vertical-align: middle; margin-right: 10px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 200;
+    background: var(--navy); color: white; padding: 12px 20px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    opacity: 0; transform: translateY(10px); transition: all 0.25s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 700px) {
+    header.top { flex-direction: column; text-align: center; padding: 20px 16px; }
+    .header-stats { justify-content: center; }
+    .meta { margin-left: 0; width: 100%; }
+    .line { grid-template-columns: 1.4fr 70px 1fr 30px; gap: 6px; }
+    .line-headers { grid-template-columns: 1.4fr 70px 1fr 30px; gap: 6px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <img src="./Datapilot_logo.png" alt="Datapilot" class="logo">
+    <div class="header-text">
+      <h1>Capacity Tracker</h1>
+      <p>Forward-looking planning: estimate your <b>days per project</b> for the coming weeks. One click on a cell to fill it in. Everyone can edit.</p>
+    </div>
+    <div class="header-stats">
+      <div class="hstat"><div class="n" id="stat-filled">–</div><div class="l">Filled this week</div></div>
+      <div class="hstat"><div class="n" id="stat-days">–</div><div class="l">Days planned</div></div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="tabs">
+      <button id="tab-grid" class="active">Planning grid</button>
+      <button id="tab-avail">Who's available</button>
+    </div>
+    <div class="me-picker">
+      <label for="me">I am</label>
+      <select id="me"><option value="">— pick your name —</option></select>
+    </div>
+    <div class="chips" id="week-chips">
+      <span class="lbl">Weeks:</span>
+      <button data-n="2" class="on">2</button>
+      <button data-n="4">4</button>
+      <button data-n="6">6</button>
+      <button data-n="8">8</button>
+    </div>
+    <button class="refresh" id="refresh-btn">Refresh</button>
+    <span class="meta" id="meta"></span>
+  </div>
+
+  <div class="legend">
+    <span>🟢 Disponible</span>
+    <span>🟡 Partiel</span>
+    <span>🔴 Chargé</span>
+    <span>⚪ Congé</span>
+    <span style="color:var(--red)">⚠ red cell = more than 5 days planned</span>
+  </div>
+
+  <div id="content"><div class="state"><span class="spinner"></span>Loading the capacity plan…</div></div>
+</div>
+
+<!-- EDITOR MODAL -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="mhead">
+      <div class="t">
+        <h2 id="m-title">–</h2>
+        <p id="m-sub">–</p>
+      </div>
+      <button id="m-close" title="Close">✕</button>
+    </div>
+    <div class="mbody">
+      <p class="mlabel">Availability for the week</p>
+      <div class="avail-btns" id="m-avail"></div>
+      <p class="mlabel">Planned projects</p>
+      <div class="line-headers"><span>Project</span><span style="text-align:center">Days</span><span>Comment</span><span></span></div>
+      <div class="lines" id="m-lines"></div>
+      <button class="addline" id="m-addline">+ Add a project</button>
+      <div class="mtotal" id="m-total-box">
+        <span>Total planned</span>
+        <span class="v" id="m-total">0 d</span>
+      </div>
+      <div class="mwarn" id="m-warn"></div>
+    </div>
+    <div class="mfoot">
+      <button class="cancel" id="m-cancel">Cancel</button>
+      <button class="save" id="m-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const APPS_SCRIPT_URL = "https://script.google.com/a/macros/datapilot.fr/s/AKfycbyUhfW211pozOYRKOJBZM9vCcRLxDhmsm3OShM1F_1SV2HWaqpg253ekKdu75xZYiWR/exec";
+
+  const AVAIL = [
+    { key: 'Disponible', emoji: '🟢' },
+    { key: 'Partiel',    emoji: '🟡' },
+    { key: 'Chargé',     emoji: '🔴' },
+    { key: 'Congé',      emoji: '⚪' }
+  ];
+  const MAX_DAYS = 5;
+
+  const state = {
+    entries: [], people: [], projects: [],
+    me: localStorage.getItem('cap_me') || '',
+    weekCount: 2, view: 'grid', availWeek: ''
+  };
+  const editor = { email: '', name: '', week: '', availability: '', lines: [], existingIds: [] };
+
+  // ---------- helpers ----------
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[ch]));
+  }
+  function currentMondayIso() {
+    const d = new Date();
+    const off = d.getDay() === 0 ? -6 : 1 - d.getDay();
+    d.setDate(d.getDate() + off);
+    return d.toISOString().slice(0, 10);
+  }
+  function weeks() {
+    const out = [];
+    const d = new Date(currentMondayIso() + 'T00:00:00');
+    for (let i = 0; i < state.weekCount; i++) {
+      out.push(d.toISOString().slice(0, 10));
+      d.setDate(d.getDate() + 7);
+    }
+    return out;
+  }
+  function fmtWeek(iso) {
+    const d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  }
+  function weekBadge(iso, i) {
+    if (i === 0) return 'this week';
+    if (i === 1) return 'next week';
+    return 'S+' + i;
+  }
+  function emojiOf(key) {
+    const a = AVAIL.find(a => a.key === key);
+    return a ? a.emoji : '';
+  }
+  function genId() {
+    return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+  function fmt(n) { return parseFloat((+n).toFixed(2)).toString(); }
+
+  function cellEntries(email, week) {
+    return state.entries.filter(e => e.personEmail === email && e.week === week);
+  }
+  function realLines(email, week) {
+    return cellEntries(email, week).filter(e => e.project || e.days > 0);
+  }
+  function cellTotal(email, week) {
+    return realLines(email, week).reduce((a, e) => a + (e.days || 0), 0);
+  }
+  function cellAvail(email, week) {
+    const withA = cellEntries(email, week).find(e => e.availability);
+    return withA ? withA.availability : '';
+  }
+
+  // ---------- rendering ----------
+  function render() {
+    updateStats();
+    const el = document.getElementById('content');
+    if (state.people.length === 0) {
+      el.innerHTML = '<div class="state">No team members found (TeamDirectory empty?).</div>';
+      return;
+    }
+    el.innerHTML = state.view === 'grid' ? renderGrid() : renderAvail();
+    wireCells();
+  }
+
+  function updateStats() {
+    const wk = currentMondayIso();
+    const filled = state.people.filter(p => cellEntries(p.email, wk).length > 0).length;
+    let days = 0;
+    state.people.forEach(p => { days += cellTotal(p.email, wk); });
+    document.getElementById('stat-filled').textContent = filled + '/' + state.people.length;
+    document.getElementById('stat-days').textContent = fmt(days);
+  }
+
+  function renderGrid() {
+    const wks = weeks();
+    let html = '<div class="grid-scroll"><table class="cap"><thead><tr>';
+    html += '<th class="person-col">Person</th>';
+    wks.forEach((w, i) => {
+      html += '<th>' + fmtWeek(w) + '<span class="wk-badge">' + weekBadge(w, i) + '</span></th>';
+    });
+    html += '</tr></thead><tbody>';
+    state.people.forEach(p => {
+      const isMe = p.email === state.me;
+      html += '<tr' + (isMe ? ' class="me"' : '') + '>';
+      html += '<td class="person-cell">' + esc(p.name) + (isMe ? ' ✦' : '') + '</td>';
+      wks.forEach(w => {
+        const lines = realLines(p.email, w);
+        const total = cellTotal(p.email, w);
+        const avail = cellAvail(p.email, w);
+        const over = total > MAX_DAYS + 0.001;
+        const isConge = avail === 'Congé' && lines.length === 0;
+        let cls = 'week-cell';
+        if (over) cls += ' over';
+        else if (isConge) cls += ' conge';
+        let inner;
+        if (lines.length === 0 && !avail) {
+          inner = '<span class="plus">+</span>';
+        } else if (lines.length === 0) {
+          inner = '<div class="tot">' + emojiOf(avail) + '</div><div class="sub">' + esc(avail) + '</div>';
+        } else {
+          inner = '<div class="tot">' + emojiOf(avail) + ' ' + fmt(total) + ' d' + (over ? ' ⚠' : '') + '</div>' +
+                  '<div class="sub">' + lines.length + ' project' + (lines.length > 1 ? 's' : '') + '</div>';
+        }
+        html += '<td class="' + cls + '"><button class="cellbtn" data-email="' + esc(p.email) + '" data-week="' + w + '">' + inner + '</button></td>';
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    return html;
+  }
+
+  function renderAvail() {
+    const wks = weeks();
+    if (!state.availWeek || wks.indexOf(state.availWeek) === -1) state.availWeek = wks[0];
+    let html = '<div class="chips" style="margin-bottom:14px"><span class="lbl">Week:</span>';
+    wks.forEach((w, i) => {
+      html += '<button class="avail-week-chip' + (w === state.availWeek ? ' on' : '') + '" data-week="' + w + '">' +
+              fmtWeek(w) + (i === 0 ? ' (this week)' : i === 1 ? ' (next)' : '') + '</button>';
+    });
+    html += '</div><div class="avail-grid">';
+
+    const groups = {};
+    AVAIL.forEach(a => { groups[a.key] = []; });
+    const notFilled = [];
+    state.people.forEach(p => {
+      const avail = cellAvail(p.email, state.availWeek);
+      const total = cellTotal(p.email, state.availWeek);
+      const has = cellEntries(p.email, state.availWeek).length > 0;
+      if (!has) { notFilled.push(p); return; }
+      const key = avail || 'Disponible';
+      (groups[key] = groups[key] || []).push({ p, total });
+    });
+
+    AVAIL.forEach(a => {
+      const list = groups[a.key] || [];
+      html += '<div class="avail-col"><h3><span>' + a.emoji + ' ' + a.key + '</span><span class="cnt">' + list.length + '</span></h3>';
+      if (list.length === 0) html += '<div class="avail-empty">Nobody</div>';
+      list.forEach(x => {
+        html += '<div class="pill"><span>' + esc(x.p.name) + '</span><span class="d">' + fmt(x.total) + ' d</span></div>';
+      });
+      html += '</div>';
+    });
+    html += '<div class="avail-col"><h3><span>❔ Not filled in</span><span class="cnt">' + notFilled.length + '</span></h3>';
+    if (notFilled.length === 0) html += '<div class="avail-empty">Everyone filled in 🎉</div>';
+    notFilled.forEach(p => { html += '<div class="pill"><span>' + esc(p.name) + '</span></div>'; });
+    html += '</div></div>';
+    return html;
+  }
+
+  function wireCells() {
+    document.querySelectorAll('.cellbtn').forEach(btn => {
+      btn.addEventListener('click', () => openEditor(btn.dataset.email, btn.dataset.week));
+    });
+    document.querySelectorAll('.avail-week-chip').forEach(btn => {
+      btn.addEventListener('click', () => { state.availWeek = btn.dataset.week; render(); });
+    });
+  }
+
+  // ---------- editor ----------
+  function openEditor(email, week) {
+    const person = state.people.find(p => p.email === email);
+    if (!person) return;
+    editor.email = email;
+    editor.name = person.name;
+    editor.week = week;
+    editor.availability = cellAvail(email, week);
+    editor.existingIds = cellEntries(email, week).map(e => e.id);
+    editor.lines = realLines(email, week).map(e => ({
+      id: e.id, project: e.project, days: e.days, comment: e.comment
+    }));
+    if (editor.lines.length === 0) editor.lines.push({ id: '', project: '', days: '', comment: '' });
+
+    document.getElementById('m-title').textContent = person.name;
+    document.getElementById('m-sub').textContent = 'Week of ' + fmtWeek(week) + ' (' + week + ')';
+    renderEditor();
+    document.getElementById('overlay').classList.add('open');
+  }
+  function closeEditor() {
+    document.getElementById('overlay').classList.remove('open');
+  }
+
+  function renderEditor() {
+    // availability buttons
+    const ab = document.getElementById('m-avail');
+    ab.innerHTML = '';
+    AVAIL.forEach(a => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = a.emoji + ' ' + a.key;
+      if (editor.availability === a.key) b.classList.add('sel');
+      b.addEventListener('click', () => {
+        editor.availability = editor.availability === a.key ? '' : a.key;
+        renderEditor();
+      });
+      ab.appendChild(b);
+    });
+
+    // lines
+    const lc = document.getElementById('m-lines');
+    lc.innerHTML = '';
+    editor.lines.forEach((line, i) => {
+      const row = document.createElement('div');
+      row.className = 'line';
+
+      const sel = document.createElement('select');
+      const opt0 = document.createElement('option');
+      opt0.value = ''; opt0.textContent = '— pick a project —';
+      sel.appendChild(opt0);
+      state.projects.forEach(pn => {
+        const o = document.createElement('option');
+        o.value = pn; o.textContent = pn;
+        if (line.project === pn) o.selected = true;
+        sel.appendChild(o);
+      });
+      const oOther = document.createElement('option');
+      oOther.value = 'Autre / Interne'; oOther.textContent = 'Autre / Interne';
+      if (line.project === 'Autre / Interne') oOther.selected = true;
+      sel.appendChild(oOther);
+      // keep an unknown stored project selectable (e.g. project became inactive)
+      if (line.project && line.project !== 'Autre / Interne' && state.projects.indexOf(line.project) === -1) {
+        const oKeep = document.createElement('option');
+        oKeep.value = line.project; oKeep.textContent = line.project + ' (inactive)';
+        oKeep.selected = true;
+        sel.appendChild(oKeep);
+      }
+      sel.addEventListener('change', () => { line.project = sel.value; });
+      row.appendChild(sel);
+
+      const days = document.createElement('input');
+      days.type = 'number'; days.min = '0'; days.max = String(MAX_DAYS); days.step = '0.5';
+      days.placeholder = '0';
+      if (line.days !== '' && line.days != null) days.value = line.days;
+      days.addEventListener('input', () => {
+        line.days = days.value === '' ? '' : parseFloat(days.value);
+        updateEditorTotal();
+      });
+      row.appendChild(days);
+
+      const com = document.createElement('input');
+      com.type = 'text'; com.placeholder = 'Comment (optional)';
+      com.maxLength = 300;
+      com.value = line.comment || '';
+      com.addEventListener('input', () => { line.comment = com.value; });
+      row.appendChild(com);
+
+      const del = document.createElement('button');
+      del.type = 'button'; del.className = 'del'; del.textContent = '✕'; del.title = 'Remove this line';
+      del.addEventListener('click', () => {
+        editor.lines.splice(i, 1);
+        if (editor.lines.length === 0) editor.lines.push({ id: '', project: '', days: '', comment: '' });
+        renderEditor();
+      });
+      row.appendChild(del);
+
+      lc.appendChild(row);
+    });
+
+    updateEditorTotal();
+  }
+
+  function editorTotal() {
+    return editor.lines.reduce((a, l) => a + (parseFloat(l.days) || 0), 0);
+  }
+  function updateEditorTotal() {
+    const t = editorTotal();
+    document.getElementById('m-total').textContent = fmt(t) + ' d';
+    const box = document.getElementById('m-total-box');
+    const warn = document.getElementById('m-warn');
+    if (t > MAX_DAYS + 0.001) {
+      box.classList.add('over');
+      warn.textContent = '⚠ More than ' + MAX_DAYS + ' days planned for one week — double-check, or save anyway if it\'s real.';
+    } else {
+      box.classList.remove('over');
+      warn.textContent = '';
+    }
+  }
+
+  async function saveEditor() {
+    const btn = document.getElementById('m-save');
+    btn.disabled = true; btn.textContent = 'Saving…';
+
+    const kept = editor.lines.filter(l => (l.project && l.project.trim()) || parseFloat(l.days) > 0);
+    kept.forEach(l => { if (!l.id) l.id = genId(); });
+    const keptIds = new Set(kept.map(l => l.id));
+
+    const posts = [];
+    // upserts
+    kept.forEach(l => {
+      posts.push({
+        formType: 'capacity', action: 'upsert',
+        entry: {
+          id: l.id,
+          personEmail: editor.email,
+          personName: editor.name,
+          week: editor.week,
+          project: l.project || '',
+          days: parseFloat(l.days) || 0,
+          availability: editor.availability,
+          comment: l.comment || ''
+        }
+      });
+    });
+    // availability-only marker when there are no lines
+    let markerId = null;
+    if (kept.length === 0 && editor.availability) {
+      const existingMarker = cellEntries(editor.email, editor.week).find(e => !e.project && !(e.days > 0));
+      markerId = existingMarker ? existingMarker.id : genId();
+      keptIds.add(markerId);
+      posts.push({
+        formType: 'capacity', action: 'upsert',
+        entry: {
+          id: markerId, personEmail: editor.email, personName: editor.name,
+          week: editor.week, project: '', days: 0,
+          availability: editor.availability, comment: ''
+        }
+      });
+    }
+    // deletions: previously-existing ids no longer kept
+    editor.existingIds.forEach(id => {
+      if (!keptIds.has(id)) {
+        posts.push({ formType: 'capacity', action: 'delete', entry: { id: id } });
+      }
+    });
+
+    try {
+      await Promise.all(posts.map(p => fetch(APPS_SCRIPT_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(p)
+      })));
+
+      // optimistic local update
+      state.entries = state.entries.filter(e => !(e.personEmail === editor.email && e.week === editor.week));
+      kept.forEach(l => state.entries.push({
+        id: l.id, personEmail: editor.email, personName: editor.name,
+        week: editor.week, project: l.project || '', days: parseFloat(l.days) || 0,
+        availability: editor.availability, comment: l.comment || ''
+      }));
+      if (kept.length === 0 && editor.availability && markerId) {
+        state.entries.push({
+          id: markerId, personEmail: editor.email, personName: editor.name,
+          week: editor.week, project: '', days: 0,
+          availability: editor.availability, comment: ''
+        });
+      }
+      closeEditor();
+      render();
+      showToast('Saved ✓');
+      setTimeout(() => load(true), 3000);  // silent re-sync
+    } catch (err) {
+      showToast('Save failed — check your connection');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Save';
+    }
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  // ---------- data ----------
+  async function load(silent) {
+    const btn = document.getElementById('refresh-btn');
+    btn.disabled = true;
+    if (!silent) {
+      document.getElementById('content').innerHTML =
+        '<div class="state"><span class="spinner"></span>Loading the capacity plan…</div>';
+    }
+    try {
+      const resp = await fetch(APPS_SCRIPT_URL + '?action=capacity', { method: 'GET' });
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error || 'Bad response');
+      state.entries = Array.isArray(data.entries) ? data.entries : [];
+      state.people = Array.isArray(data.people) ? data.people : [];
+      state.projects = Array.isArray(data.projects) ? data.projects : [];
+      fillMePicker();
+      document.getElementById('meta').textContent = 'Loaded ' + new Date().toLocaleTimeString();
+      render();
+    } catch (err) {
+      if (!silent) {
+        document.getElementById('content').innerHTML =
+          '<div class="state error">Could not load the capacity data. ' +
+          'Check that the backend has the "capacity" action deployed.<br><small>' + esc(err.message) + '</small></div>';
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function fillMePicker() {
+    const sel = document.getElementById('me');
+    const current = state.me;
+    sel.innerHTML = '<option value="">— pick your name —</option>';
+    state.people.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p.email; o.textContent = p.name;
+      if (p.email === current) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  // ---------- wiring ----------
+  document.getElementById('me').addEventListener('change', e => {
+    state.me = e.target.value;
+    localStorage.setItem('cap_me', state.me);
+    render();
+  });
+  document.querySelectorAll('#week-chips button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#week-chips button').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      state.weekCount = parseInt(btn.dataset.n, 10);
+      render();
+    });
+  });
+  document.getElementById('tab-grid').addEventListener('click', () => {
+    state.view = 'grid';
+    document.getElementById('tab-grid').classList.add('active');
+    document.getElementById('tab-avail').classList.remove('active');
+    render();
+  });
+  document.getElementById('tab-avail').addEventListener('click', () => {
+    state.view = 'avail';
+    document.getElementById('tab-avail').classList.add('active');
+    document.getElementById('tab-grid').classList.remove('active');
+    render();
+  });
+  document.getElementById('refresh-btn').addEventListener('click', () => load(false));
+  document.getElementById('m-close').addEventListener('click', closeEditor);
+  document.getElementById('m-cancel').addEventListener('click', closeEditor);
+  document.getElementById('m-save').addEventListener('click', saveEditor);
+  document.getElementById('m-addline').addEventListener('click', () => {
+    editor.lines.push({ id: '', project: '', days: '', comment: '' });
+    renderEditor();
+  });
+  document.getElementById('overlay').addEventListener('mousedown', e => {
+    if (e.target === document.getElementById('overlay')) closeEditor();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeEditor();
+  });
+
+  load(false);
+</script>
+</body>
+</html>
