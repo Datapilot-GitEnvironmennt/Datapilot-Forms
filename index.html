@@ -41,7 +41,7 @@
   .deco-bottom-left  { bottom: 40px;  left: -50px;  width: 240px; transform: rotate(-15deg); opacity: 0.75; }
   .deco-mid-right    { top: 50%;     right: -100px; width: 240px; transform: rotate(35deg); opacity: 0.55; }
   .deco-top-left     { top: 100px;   left: -30px;   width: 140px; opacity: 0.6; }
-  .wrap { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 60px 24px 40px 24px; flex: 1; width: 100%; }
+  .wrap { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 60px 24px 40px 24px; flex: 1; width: 100%; }
   /* HEADER */
   .header {
     text-align: center;
@@ -78,55 +78,94 @@
   /* FORM CARDS GRID */
   .cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+    gap: 22px;
     margin-bottom: 40px;
   }
   .form-card {
+    --accent: var(--amber);
+    --accent-bg: rgba(245, 166, 35, 0.14);
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 32px 28px;
+    border-radius: 18px;
+    padding: 30px 28px 26px 28px;
     text-decoration: none;
     color: inherit;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    transition: all 0.2s ease;
+    transition: all 0.22s ease;
     position: relative;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
-  .form-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 28px rgba(15, 42, 61, 0.12);
-    border-color: var(--teal);
-  }
+  /* per-card accent colors */
+  .card-teal  { --accent: var(--teal);  --accent-bg: rgba(63, 166, 184, 0.12); }
+  .card-amber { --accent: var(--amber); --accent-bg: rgba(245, 166, 35, 0.14); }
+  .card-pink  { --accent: var(--pink);  --accent-bg: rgba(216, 123, 137, 0.14); }
+  .card-navy  { --accent: var(--navy);  --accent-bg: rgba(15, 42, 61, 0.09); }
+  /* everything inside paints above the glow */
+  .form-card > * { position: relative; z-index: 1; }
+  /* left accent stripe */
   .form-card::before {
     content: '';
     position: absolute;
     top: 0; left: 0;
     width: 4px;
     height: 100%;
-    background: var(--amber);
-    transition: width 0.2s ease;
+    background: var(--accent);
+    transition: width 0.22s ease;
+    z-index: 0;
   }
-  .form-card:hover::before {
-    width: 6px;
+  /* soft corner glow in the card's accent */
+  .form-card::after {
+    content: '';
+    position: absolute;
+    top: -70px; right: -70px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: var(--accent-bg);
+    opacity: 0.55;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+    z-index: 0;
+  }
+  .form-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 34px rgba(15, 42, 61, 0.14);
+    border-color: var(--accent);
+  }
+  .form-card:hover::before { width: 7px; }
+  .form-card:hover::after { transform: scale(1.25); opacity: 0.85; }
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
   }
   .form-card .icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 14px;
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 4px;
-    font-size: 28px;
+    background: var(--accent-bg);
+    color: var(--accent);
+    transition: transform 0.22s ease;
+    flex-shrink: 0;
   }
-  .form-card .icon-timesheet { background: rgba(63, 166, 184, 0.12); color: var(--teal); }
-  .form-card .icon-supplies  { background: rgba(245, 166, 35, 0.15); color: var(--amber); }
-  .form-card .icon-staffing  { background: rgba(216, 123, 137, 0.15); color: var(--pink); }
+  .form-card:hover .icon { transform: scale(1.08) rotate(-3deg); }
+  .form-card .tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-bg);
+    padding: 5px 11px;
+    border-radius: 12px;
+    white-space: nowrap;
+  }
   .form-card h2 {
     margin: 0;
     font-size: 19px;
@@ -148,7 +187,7 @@
     gap: 6px;
     font-size: 12px;
     font-weight: 600;
-    color: var(--teal);
+    color: var(--accent);
     text-transform: uppercase;
     letter-spacing: 0.6px;
   }
@@ -177,6 +216,7 @@
     .header p { font-size: 14px; }
     .form-card { padding: 24px 22px; }
     .form-card h2 { font-size: 17px; }
+    .form-card .icon { width: 50px; height: 50px; border-radius: 14px; }
   }
 </style>
 </head>
@@ -194,16 +234,19 @@
     <p>Pick a form below to submit a weekly timesheet, request office supplies, or check who's staffed on which project.</p>
   </div>
   <div class="cards-grid">
-    <a href="./Timesheet.html" class="form-card">
-      <div class="icon icon-timesheet">
-        <!-- Calendar / clock icon -->
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="16" y1="2" x2="16" y2="6"></line>
-          <line x1="8" y1="2" x2="8" y2="6"></line>
-          <line x1="3" y1="10" x2="21" y2="10"></line>
-          <path d="M12 14v3l2 1"></path>
-        </svg>
+    <a href="./Timesheet.html" class="form-card card-teal">
+      <div class="card-top">
+        <div class="icon">
+          <!-- Calendar / clock icon -->
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+            <path d="M12 14v3l2 1"></path>
+          </svg>
+        </div>
+        <span class="tag">Weekly &middot; Friday</span>
       </div>
       <h2>Weekly Timesheet</h2>
       <p>Log how you spent the work week across projects, internal time, and time off. Submit every Friday.</p>
@@ -215,14 +258,17 @@
         </svg>
       </span>
     </a>
-    <a href="./Supplies.html" class="form-card">
-      <div class="icon icon-supplies">
-        <!-- Box / package icon -->
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+    <a href="./Supplies.html" class="form-card card-amber">
+      <div class="card-top">
+        <div class="icon">
+          <!-- Box / package icon -->
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
           <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
           <line x1="12" y1="22.08" x2="12" y2="12"></line>
-        </svg>
+          </svg>
+        </div>
+        <span class="tag">Anytime</span>
       </div>
       <h2>Office Supplies Request</h2>
       <p>Need something for the office? Request items, the office manager will be notified and follow up.</p>
@@ -234,20 +280,46 @@
         </svg>
       </span>
     </a>
-    <a href="./Staffing.html" class="form-card">
-      <div class="icon icon-staffing">
-        <!-- People / team icon -->
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-        </svg>
+    <a href="./Staffing.html" class="form-card card-pink">
+      <div class="card-top">
+        <div class="icon">
+          <!-- People / team icon -->
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <span class="tag">Read-only</span>
       </div>
       <h2>Staffing</h2>
-      <p>Live view of the Monday staffing board: every project and who's working on it, by project or by person. Read-only.</p>
+      <p>Every project and who's working on it, by project or by person. Searchable and filterable.</p>
       <span class="arrow">
         Open view
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </span>
+    </a>
+    <a href="./Board.html" class="form-card card-navy">
+      <div class="card-top">
+        <div class="icon">
+          <!-- Board / table icon -->
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <line x1="9" y1="21" x2="9" y2="9"></line>
+            <line x1="15" y1="21" x2="15" y2="9"></line>
+          </svg>
+        </div>
+        <span class="tag">Live &middot; Monday</span>
+      </div>
+      <h2>Monday Board</h2>
+      <p>The staffing board embedded with Monday's own interface — groups, statuses and assignments, always up to date.</p>
+      <span class="arrow">
+        Open board
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="5" y1="12" x2="19" y2="12"></line>
           <polyline points="12 5 19 12 12 19"></polyline>
