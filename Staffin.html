@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staffing · Datapilot</title>
+<link rel="icon" type="image/png" href="./datapilot logo design.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0F2A3D;
+    --navy-dark: #081826;
+    --teal: #3FA6B8;
+    --amber: #F5A623;
+    --amber-soft: #FFE4B5;
+    --pink: #D87B89;
+    --bg: #FFFCF5;
+    --card: #FFFFFF;
+    --border: #EAE6DA;
+    --muted: #6B7280;
+    --text: #1A1A1A;
+    --green: #16A34A;
+    --green-bg: #DCFCE7;
+    --red: #DC2626;
+    --sub-bg: #F7F4EB;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding-bottom: 60px;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+  header.top {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color: white; padding: 28px; border-radius: 16px;
+    margin-bottom: 20px; display: flex; align-items: center; gap: 24px;
+    box-shadow: 0 4px 16px rgba(15, 42, 61, 0.15);
+  }
+  header.top img.logo { height: 56px; width: auto; flex-shrink: 0; }
+  header.top .header-text { flex: 1; }
+  header.top h1 { margin: 0 0 4px 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  header.top p { margin: 0; font-size: 13px; opacity: 0.85; font-weight: 300; }
+  header.top b { color: var(--amber); font-weight: 600; }
+  .header-stats { display: flex; gap: 22px; }
+  .hstat { text-align: center; }
+  .hstat .n { font-size: 24px; font-weight: 700; color: var(--amber); }
+  .hstat .l { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
+
+  .toolbar {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .tabs { display: flex; background: var(--sub-bg); border-radius: 9px; padding: 3px; }
+  .tabs button {
+    border: 0; background: transparent; padding: 8px 18px; border-radius: 7px;
+    font-family: inherit; font-size: 13px; font-weight: 600; color: var(--muted);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tabs button.active { background: var(--navy); color: white; }
+  input.search {
+    flex: 1; min-width: 180px; padding: 9px 14px;
+    border: 1px solid var(--border); border-radius: 8px;
+    font-family: inherit; font-size: 13px;
+  }
+  input.search:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(63,166,184,0.15); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chips button {
+    border: 1px solid var(--border); background: white; padding: 7px 13px;
+    border-radius: 20px; font-family: inherit; font-size: 12px; font-weight: 500;
+    color: var(--navy); cursor: pointer; transition: all 0.15s;
+  }
+  .chips button:hover { border-color: var(--teal); }
+  .chips button.on { background: var(--navy); color: white; border-color: var(--navy); }
+  label.toggle {
+    display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 500;
+    color: var(--navy); cursor: pointer; user-select: none;
+  }
+  label.toggle input { width: 15px; height: 15px; accent-color: var(--amber); cursor: pointer; }
+  button.refresh {
+    border: 0; background: var(--amber); color: var(--navy); padding: 9px 16px;
+    border-radius: 8px; font-family: inherit; font-size: 12px; font-weight: 700;
+    cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
+    box-shadow: 0 2px 6px rgba(245,166,35,0.3); transition: all 0.15s;
+  }
+  button.refresh:hover { background: #E5961F; }
+  button.refresh:disabled { background: #E5E7EB; color: #9CA3AF; cursor: wait; box-shadow: none; }
+  .meta { font-size: 11px; color: var(--muted); font-style: italic; margin-left: auto; }
+
+  .section-title {
+    background: var(--navy-dark); color: white; padding: 8px 16px;
+    font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    border-radius: 8px; margin: 20px 0 12px 0; display: flex; justify-content: space-between;
+  }
+  .section-title .count { opacity: 0.7; font-weight: 400; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+  .pcard {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; border-left: 4px solid var(--teal);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .pcard.t-regie { border-left-color: var(--amber); }
+  .pcard.t-adhoc { border-left-color: var(--pink); }
+  .pcard.t-autre { border-left-color: #9CA3AF; }
+  .pcard.inactive { opacity: 0.55; }
+  .pcard .name { font-size: 14px; font-weight: 600; color: var(--navy); margin-bottom: 6px; word-break: break-word; }
+  .pcard .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  .badge {
+    display: inline-block; font-size: 10px; font-weight: 600; padding: 3px 9px;
+    border-radius: 10px; background: var(--sub-bg); color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  .badge.st-active { background: var(--green-bg); color: var(--green); }
+  .badge.st-maint { background: #E0F2F4; color: var(--teal); }
+  .badge.st-off { background: #F3F4F6; color: #9CA3AF; }
+  .pcard .period { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+  .team { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--sub-bg); border: 1px solid var(--border);
+    padding: 4px 10px; border-radius: 14px; font-size: 12px; font-weight: 500; color: var(--navy);
+  }
+  .chip .avatar {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--teal); color: white; font-size: 9px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .chip.lead .avatar { background: var(--amber); color: var(--navy); }
+  .chip.lead { border-color: var(--amber); }
+  .no-team { font-size: 12px; color: var(--muted); font-style: italic; }
+
+  .person-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .person-card .phead { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .person-card .avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--navy); color: white; font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .person-card .pname { font-size: 14px; font-weight: 600; color: var(--navy); flex: 1; }
+  .person-card .pcount {
+    background: var(--amber-soft); color: var(--navy); font-size: 11px; font-weight: 700;
+    padding: 3px 10px; border-radius: 12px;
+  }
+  .person-card ul { list-style: none; margin: 0; padding: 0; }
+  .person-card li {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 0; border-bottom: 1px solid var(--sub-bg); font-size: 12.5px;
+  }
+  .person-card li:last-child { border-bottom: 0; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--teal); }
+  .dot.t-regie { background: var(--amber); }
+  .dot.t-adhoc { background: var(--pink); }
+  .dot.t-autre { background: #9CA3AF; }
+  .person-card li .lead-star { color: var(--amber); font-size: 11px; flex-shrink: 0; }
+  .person-card li .proj { flex: 1; word-break: break-word; color: var(--text); }
+
+  .state { text-align: center; padding: 60px 20px; color: var(--muted); font-style: italic; }
+  .state.error { color: var(--red); font-style: normal; font-weight: 500; }
+  .spinner {
+    display: inline-block; width: 18px; height: 18px;
+    border: 2px solid var(--border); border-top-color: var(--teal);
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+    vertical-align: middle; margin-right: 10px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .legend { display: flex; gap: 16px; margin: 14px 2px 0 2px; font-size: 11px; color: var(--muted); flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+
+  @media (max-width: 700px) {
+    header.top { flex-direction: column; text-align: center; padding: 20px 16px; }
+    .header-stats { justify-content: center; }
+    .toolbar { gap: 8px; }
+    .meta { margin-left: 0; width: 100%; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <img src="./Datapilot_logo.png" alt="Datapilot" class="logo">
+    <div class="header-text">
+      <h1>Staffing</h1>
+      <p>Live view of the <b>Monday staffing board</b> — projects and who's on them. Data refreshes with each Monday Sync.</p>
+    </div>
+    <div class="header-stats">
+      <div class="hstat"><div class="n" id="stat-projects">–</div><div class="l">Projects</div></div>
+      <div class="hstat"><div class="n" id="stat-people">–</div><div class="l">People</div></div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="tabs">
+      <button id="tab-projects" class="active">By project</button>
+      <button id="tab-people">By person</button>
+    </div>
+    <input type="text" class="search" id="search" placeholder="Search project or person…">
+    <div class="chips" id="type-chips">
+      <button data-type="" class="on">All</button>
+      <button data-type="sprint">Sprint</button>
+      <button data-type="regie">Régie</button>
+      <button data-type="adhoc">Ad-hoc</button>
+      <button data-type="autre">Interne</button>
+    </div>
+    <label class="toggle"><input type="checkbox" id="active-only" checked> Active only</label>
+    <button class="refresh" id="refresh-btn">Refresh</button>
+    <span class="meta" id="meta"></span>
+  </div>
+
+  <div id="content"><div class="state"><span class="spinner"></span>Loading staffing from the Sheet…</div></div>
+
+  <div class="legend">
+    <span><span class="dot"></span> Sprint</span>
+    <span><span class="dot t-regie"></span> Régie</span>
+    <span><span class="dot t-adhoc"></span> Ad-hoc</span>
+    <span><span class="dot t-autre"></span> Interne/Autre</span>
+    <span><span class="chip lead" style="padding:2px 8px"><span class="avatar">L</span> lead</span></span>
+  </div>
+</div>
+
+<script>
+  const APPS_SCRIPT_URL = "https://script.google.com/a/macros/datapilot.fr/s/AKfycbyUhfW211pozOYRKOJBZM9vCcRLxDhmsm3OShM1F_1SV2HWaqpg253ekKdu75xZYiWR/exec";
+
+  let STAFFING = [];
+  const state = { view: 'projects', search: '', type: '', activeOnly: true };
+
+  // ---------- helpers ----------
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[ch]));
+  }
+  function typeCode(p) {
+    const t = (p.type || '').toLowerCase();
+    if (t.indexOf('sprint') !== -1) return 'sprint';
+    if (t.indexOf('régie') !== -1 || t.indexOf('regie') !== -1) return 'regie';
+    if (t.indexOf('ad-hoc') !== -1 || t.indexOf('adhoc') !== -1) return 'adhoc';
+    return 'autre';
+  }
+  function statusBadge(p) {
+    const s = (p.status || '').toLowerCase();
+    if (p.active !== 'Yes' && typeCode(p) !== 'adhoc') return '<span class="badge st-off">' + (esc(p.status) || 'inactive') + '</span>';
+    if (s.indexOf('en cours') !== -1) return '<span class="badge st-active">' + esc(p.status) + '</span>';
+    if (s.indexOf('maintenance') !== -1) return '<span class="badge st-maint">' + esc(p.status) + '</span>';
+    return p.status ? '<span class="badge">' + esc(p.status) + '</span>' : '';
+  }
+  function initials(name) {
+    const parts = String(name).trim().split(/\s+/);
+    return ((parts[0] || '')[0] || '').toUpperCase() + ((parts[1] || '')[0] || '').toUpperCase();
+  }
+  function splitLeads(lead) {
+    return String(lead || '').split(/[,;]/).map(s => s.trim()).filter(s => s);
+  }
+  function membersOf(p) {
+    // union of PersonMap team + Lead, deduped case-insensitively, leads flagged
+    const leads = splitLeads(p.lead);
+    const leadKeys = new Set(leads.map(n => n.toLowerCase()));
+    const seen = new Set();
+    const out = [];
+    leads.concat(p.team || []).forEach(n => {
+      const k = n.toLowerCase();
+      if (seen.has(k)) return;
+      seen.add(k);
+      out.push({ name: n, isLead: leadKeys.has(k) });
+    });
+    return out;
+  }
+  function visibleProjects() {
+    const term = state.search.toLowerCase().trim();
+    return STAFFING.filter(p => {
+      if (state.activeOnly && p.active !== 'Yes') return false;
+      if (state.type && typeCode(p) !== state.type) return false;
+      if (term) {
+        const inName = p.name.toLowerCase().indexOf(term) !== -1;
+        const inPeople = membersOf(p).some(m => m.name.toLowerCase().indexOf(term) !== -1);
+        if (!inName && !inPeople) return false;
+      }
+      return true;
+    });
+  }
+
+  // ---------- rendering ----------
+  function render() {
+    const list = visibleProjects();
+
+    // header stats (on the filtered set)
+    const people = new Set();
+    list.forEach(p => membersOf(p).forEach(m => people.add(m.name.toLowerCase())));
+    document.getElementById('stat-projects').textContent = list.length;
+    document.getElementById('stat-people').textContent = people.size;
+
+    const el = document.getElementById('content');
+    if (STAFFING.length === 0) return; // loading / error state already shown
+    if (list.length === 0) {
+      el.innerHTML = '<div class="state">No project matches the current filters.</div>';
+      return;
+    }
+    el.innerHTML = state.view === 'projects' ? renderProjects(list) : renderPeople(list);
+  }
+
+  function renderProjects(list) {
+    const sections = [
+      { code: 'sprint', title: 'Sprint projects' },
+      { code: 'regie',  title: 'Régies / Maintenance' },
+      { code: 'adhoc',  title: 'Ad-hoc' },
+      { code: 'autre',  title: 'Interne / Autre' }
+    ];
+    let html = '';
+    sections.forEach(sec => {
+      const items = list.filter(p => typeCode(p) === sec.code)
+                        .sort((a, b) => a.name.localeCompare(b.name));
+      if (items.length === 0) return;
+      html += '<div class="section-title"><span>' + sec.title + '</span><span class="count">' + items.length + '</span></div>';
+      html += '<div class="grid">';
+      items.forEach(p => {
+        const members = membersOf(p);
+        const chips = members.length
+          ? members.map(m =>
+              '<span class="chip' + (m.isLead ? ' lead' : '') + '">' +
+              '<span class="avatar">' + esc(m.isLead ? 'L' : initials(m.name)) + '</span>' +
+              esc(m.name) + '</span>').join('')
+          : '<span class="no-team">Nobody staffed yet</span>';
+        html += '<div class="pcard t-' + typeCode(p) + (p.active !== 'Yes' ? ' inactive' : '') + '">' +
+          '<div class="name">' + esc(p.name) + '</div>' +
+          '<div class="row">' + statusBadge(p) +
+            (p.active !== 'Yes' ? '<span class="badge st-off">inactive</span>' : '') + '</div>' +
+          (p.period ? '<div class="period">' + esc(p.period) + '</div>' : '') +
+          '<div class="team">' + chips + '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+    });
+    return html;
+  }
+
+  function renderPeople(list) {
+    const map = {};
+    list.forEach(p => {
+      membersOf(p).forEach(m => {
+        const k = m.name.toLowerCase();
+        if (!map[k]) map[k] = { name: m.name, projects: [] };
+        map[k].projects.push({ p: p, isLead: m.isLead });
+      });
+    });
+    const people = Object.keys(map).sort().map(k => map[k]);
+    if (people.length === 0) return '<div class="state">Nobody staffed on the filtered projects.</div>';
+
+    let html = '<div class="section-title"><span>Team</span><span class="count">' + people.length + '</span></div>';
+    html += '<div class="grid">';
+    people.forEach(person => {
+      html += '<div class="person-card">' +
+        '<div class="phead">' +
+          '<span class="avatar">' + esc(initials(person.name)) + '</span>' +
+          '<span class="pname">' + esc(person.name) + '</span>' +
+          '<span class="pcount">' + person.projects.length + ' project' + (person.projects.length > 1 ? 's' : '') + '</span>' +
+        '</div><ul>';
+      person.projects
+        .sort((a, b) => a.p.name.localeCompare(b.p.name))
+        .forEach(entry => {
+          html += '<li><span class="dot t-' + typeCode(entry.p) + '"></span>' +
+            (entry.isLead ? '<span class="lead-star" title="Lead">★</span>' : '') +
+            '<span class="proj">' + esc(entry.p.name) + '</span>' +
+            statusBadge(entry.p) + '</li>';
+        });
+      html += '</ul></div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  // ---------- data ----------
+  async function load() {
+    const btn = document.getElementById('refresh-btn');
+    btn.disabled = true;
+    document.getElementById('content').innerHTML =
+      '<div class="state"><span class="spinner"></span>Loading staffing from the Sheet…</div>';
+    try {
+      const resp = await fetch(APPS_SCRIPT_URL + '?action=staffing', { method: 'GET' });
+      const data = await resp.json();
+      if (!data.ok || !Array.isArray(data.staffing)) throw new Error(data.error || 'Bad response');
+      STAFFING = data.staffing;
+      document.getElementById('meta').textContent =
+        'Loaded ' + new Date().toLocaleTimeString() + ' · data as of last Monday Sync';
+      render();
+    } catch (err) {
+      document.getElementById('content').innerHTML =
+        '<div class="state error">Could not load staffing data. ' +
+        'Check that the backend has the "staffing" action deployed.<br><small>' + esc(err.message) + '</small></div>';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ---------- wiring ----------
+  document.getElementById('tab-projects').addEventListener('click', () => {
+    state.view = 'projects';
+    document.getElementById('tab-projects').classList.add('active');
+    document.getElementById('tab-people').classList.remove('active');
+    render();
+  });
+  document.getElementById('tab-people').addEventListener('click', () => {
+    state.view = 'people';
+    document.getElementById('tab-people').classList.add('active');
+    document.getElementById('tab-projects').classList.remove('active');
+    render();
+  });
+  document.getElementById('search').addEventListener('input', e => {
+    state.search = e.target.value;
+    render();
+  });
+  document.querySelectorAll('#type-chips button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#type-chips button').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      state.type = btn.dataset.type;
+      render();
+    });
+  });
+  document.getElementById('active-only').addEventListener('change', e => {
+    state.activeOnly = e.target.checked;
+    render();
+  });
+  document.getElementById('refresh-btn').addEventListener('click', load);
+
+  load();
+</script>
+</body>
+</html>
