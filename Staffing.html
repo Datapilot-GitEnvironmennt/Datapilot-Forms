@@ -132,8 +132,6 @@
     background: var(--teal); color: white; font-size: 9px; font-weight: 700;
     display: inline-flex; align-items: center; justify-content: center;
   }
-  .chip.lead .avatar { background: var(--amber); color: var(--navy); }
-  .chip.lead { border-color: var(--amber); }
   .no-team { font-size: 12px; color: var(--muted); font-style: italic; }
 
   .person-card {
@@ -161,7 +159,6 @@
   .dot.t-regie { background: var(--amber); }
   .dot.t-adhoc { background: var(--pink); }
   .dot.t-autre { background: #9CA3AF; }
-  .person-card li .lead-star { color: var(--amber); font-size: 11px; flex-shrink: 0; }
   .person-card li .proj { flex: 1; word-break: break-word; color: var(--text); }
 
   .state { text-align: center; padding: 60px 20px; color: var(--muted); font-style: italic; }
@@ -224,7 +221,6 @@
     <span><span class="dot t-regie"></span> Régie</span>
     <span><span class="dot t-adhoc"></span> Ad-hoc</span>
     <span><span class="dot t-autre"></span> Interne/Autre</span>
-    <span><span class="chip lead" style="padding:2px 8px"><span class="avatar">L</span> lead</span> (1st person on the Monday card)</span>
   </div>
 </div>
 
@@ -262,18 +258,15 @@
     return String(lead || '').split(/[,;]/).map(s => s.trim()).filter(s => s);
   }
   function membersOf(p) {
-    // p.lead holds the whole Monday "Team" column (comma-separated) — the
-    // board has no separate Lead column. Convention: the FIRST person
-    // listed is the project lead; everyone else is a team member.
-    const names = splitLeads(p.lead);
-    const leadKey = names.length ? names[0].toLowerCase() : '';
+    // p.lead holds the whole Monday "Team" column (comma-separated);
+    // PersonMap P1-P4 carries the same people. Union + dedupe.
     const seen = new Set();
     const out = [];
-    names.concat(p.team || []).forEach(n => {
+    splitLeads(p.lead).concat(p.team || []).forEach(n => {
       const k = n.toLowerCase();
       if (seen.has(k)) return;
       seen.add(k);
-      out.push({ name: n, isLead: !!leadKey && k === leadKey });
+      out.push({ name: n });
     });
     return out;
   }
@@ -328,8 +321,8 @@
         const members = membersOf(p);
         const chips = members.length
           ? members.map(m =>
-              '<span class="chip' + (m.isLead ? ' lead' : '') + '">' +
-              '<span class="avatar">' + esc(m.isLead ? 'L' : initials(m.name)) + '</span>' +
+              '<span class="chip">' +
+              '<span class="avatar">' + esc(initials(m.name)) + '</span>' +
               esc(m.name) + '</span>').join('')
           : '<span class="no-team">Nobody staffed yet</span>';
         html += '<div class="pcard t-' + typeCode(p) + (p.active !== 'Yes' ? ' inactive' : '') + '">' +
@@ -351,7 +344,7 @@
       membersOf(p).forEach(m => {
         const k = m.name.toLowerCase();
         if (!map[k]) map[k] = { name: m.name, projects: [] };
-        map[k].projects.push({ p: p, isLead: m.isLead });
+        map[k].projects.push(p);
       });
     });
     const people = Object.keys(map).sort().map(k => map[k]);
@@ -367,12 +360,11 @@
           '<span class="pcount">' + person.projects.length + ' project' + (person.projects.length > 1 ? 's' : '') + '</span>' +
         '</div><ul>';
       person.projects
-        .sort((a, b) => a.p.name.localeCompare(b.p.name))
-        .forEach(entry => {
-          html += '<li><span class="dot t-' + typeCode(entry.p) + '"></span>' +
-            (entry.isLead ? '<span class="lead-star" title="Lead">★</span>' : '') +
-            '<span class="proj">' + esc(entry.p.name) + '</span>' +
-            statusBadge(entry.p) + '</li>';
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(proj => {
+          html += '<li><span class="dot t-' + typeCode(proj) + '"></span>' +
+            '<span class="proj">' + esc(proj.name) + '</span>' +
+            statusBadge(proj) + '</li>';
         });
       html += '</ul></div>';
     });
