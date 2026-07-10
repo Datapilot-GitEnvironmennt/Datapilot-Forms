@@ -68,7 +68,7 @@
       '<input id="dp-gate-pw" type="password" placeholder="Team password" autocomplete="current-password">' +
       '<button id="dp-gate-btn" type="button">Enter</button>' +
       '<div class="err" id="dp-gate-err"></div>' +
-      '<div class="hint">Ask your project lead for the password.</div>' +
+      '<div class="hint">Ask GM for the password.</div>' +
       '</div>';
     document.body.appendChild(overlay);
     setErr(msg);
