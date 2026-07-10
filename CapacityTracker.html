@@ -51,7 +51,6 @@
   .hstat { text-align: center; }
   .hstat .n { font-size: 22px; font-weight: 700; color: var(--amber); }
   .hstat .l { font-size: 9.5px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
-
   .toolbar {
     background: var(--card); border: 1px solid var(--border); border-radius: 12px;
     padding: 12px 16px; margin-bottom: 16px;
@@ -88,10 +87,8 @@
   button.refresh:hover { background: #E5961F; }
   button.refresh:disabled { background: #E5E7EB; color: #9CA3AF; cursor: wait; box-shadow: none; }
   .meta { font-size: 11px; color: var(--muted); font-style: italic; margin-left: auto; }
-
   .legend { display: flex; gap: 16px; margin: 0 2px 14px 2px; font-size: 11.5px; color: var(--muted); flex-wrap: wrap; }
   .legend span { display: inline-flex; align-items: center; gap: 5px; }
-
   /* ---- GRID ---- */
   .grid-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
   table.cap { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 640px; }
@@ -129,7 +126,6 @@
   td.week-cell.over { background: var(--red-bg); }
   td.week-cell.over .tot { color: var(--red); }
   td.week-cell.conge { background: #F3F4F6; }
-
   /* ---- AVAILABILITY VIEW ---- */
   .avail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
   .avail-col {
@@ -146,7 +142,6 @@
   }
   .avail-col .pill .d { font-size: 11px; color: var(--muted); }
   .avail-empty { font-size: 12px; color: var(--muted); font-style: italic; }
-
   /* ---- MODAL ---- */
   .overlay {
     position: fixed; inset: 0; background: rgba(8, 24, 38, 0.55);
@@ -219,7 +214,6 @@
   .mfoot .save { background: var(--amber); color: var(--navy); box-shadow: 0 2px 8px rgba(245,166,35,0.3); }
   .mfoot .save:hover { background: #E5961F; }
   .mfoot .save:disabled { background: #E5E7EB; color: #9CA3AF; cursor: wait; box-shadow: none; }
-
   .state { text-align: center; padding: 60px 20px; color: var(--muted); font-style: italic; }
   .state.error { color: var(--red); font-style: normal; font-weight: 500; }
   .spinner {
@@ -236,7 +230,6 @@
     opacity: 0; transform: translateY(10px); transition: all 0.25s; pointer-events: none;
   }
   .toast.show { opacity: 1; transform: translateY(0); }
-
   @media (max-width: 700px) {
     header.top { flex-direction: column; text-align: center; padding: 20px 16px; }
     .header-stats { justify-content: center; }
@@ -259,7 +252,6 @@
       <div class="hstat"><div class="n" id="stat-days">–</div><div class="l">Days planned</div></div>
     </div>
   </header>
-
   <div class="toolbar">
     <div class="tabs">
       <button id="tab-grid" class="active">Planning grid</button>
@@ -279,7 +271,6 @@
     <button class="refresh" id="refresh-btn">Refresh</button>
     <span class="meta" id="meta"></span>
   </div>
-
   <div class="legend">
     <span>🟢 Disponible</span>
     <span>🟡 Partiel</span>
@@ -287,10 +278,8 @@
     <span>⚪ Congé</span>
     <span style="color:var(--red)">⚠ red cell = more than 5 days planned</span>
   </div>
-
-  <div id="content"><div class="state"><span class="spinner"></span>Loading the capacity plan…</div></div>
+  <div id="content"><div class="state"><span class="spinner"></span>Loading the capacity plan...</div></div>
 </div>
-
 <!-- EDITOR MODAL -->
 <div class="overlay" id="overlay">
   <div class="modal">
@@ -320,12 +309,10 @@
     </div>
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
-
+<script src="./gate.js"></script>
 <script>
   const APPS_SCRIPT_URL = "https://script.google.com/a/macros/datapilot.fr/s/AKfycbyUhfW211pozOYRKOJBZM9vCcRLxDhmsm3OShM1F_1SV2HWaqpg253ekKdu75xZYiWR/exec";
-
   const AVAIL = [
     { key: 'Disponible', emoji: '🟢' },
     { key: 'Partiel',    emoji: '🟡' },
@@ -333,14 +320,12 @@
     { key: 'Congé',      emoji: '⚪' }
   ];
   const MAX_DAYS = 5;
-
   const state = {
     entries: [], people: [], projects: [],
     me: localStorage.getItem('cap_me') || '',
     weekCount: 2, view: 'grid', availWeek: ''
   };
   const editor = { email: '', name: '', week: '', availability: '', lines: [], existingIds: [] };
-
   // ---------- helpers ----------
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({
@@ -379,7 +364,6 @@
     return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   }
   function fmt(n) { return parseFloat((+n).toFixed(2)).toString(); }
-
   function cellEntries(email, week) {
     return state.entries.filter(e => e.personEmail === email && e.week === week);
   }
@@ -393,7 +377,6 @@
     const withA = cellEntries(email, week).find(e => e.availability);
     return withA ? withA.availability : '';
   }
-
   // ---------- rendering ----------
   function render() {
     updateStats();
@@ -405,7 +388,6 @@
     el.innerHTML = state.view === 'grid' ? renderGrid() : renderAvail();
     wireCells();
   }
-
   function updateStats() {
     const wk = currentMondayIso();
     const filled = state.people.filter(p => cellEntries(p.email, wk).length > 0).length;
@@ -414,7 +396,6 @@
     document.getElementById('stat-filled').textContent = filled + '/' + state.people.length;
     document.getElementById('stat-days').textContent = fmt(days);
   }
-
   function renderGrid() {
     const wks = weeks();
     let html = '<div class="grid-scroll"><table class="cap"><thead><tr>';
@@ -452,7 +433,6 @@
     html += '</tbody></table></div>';
     return html;
   }
-
   function renderAvail() {
     const wks = weeks();
     if (!state.availWeek || wks.indexOf(state.availWeek) === -1) state.availWeek = wks[0];
@@ -462,7 +442,6 @@
               fmtWeek(w) + (i === 0 ? ' (this week)' : i === 1 ? ' (next)' : '') + '</button>';
     });
     html += '</div><div class="avail-grid">';
-
     const groups = {};
     AVAIL.forEach(a => { groups[a.key] = []; });
     const notFilled = [];
@@ -474,7 +453,6 @@
       const key = avail || 'Disponible';
       (groups[key] = groups[key] || []).push({ p, total });
     });
-
     AVAIL.forEach(a => {
       const list = groups[a.key] || [];
       html += '<div class="avail-col"><h3><span>' + a.emoji + ' ' + a.key + '</span><span class="cnt">' + list.length + '</span></h3>';
@@ -490,7 +468,6 @@
     html += '</div></div>';
     return html;
   }
-
   function wireCells() {
     document.querySelectorAll('.cellbtn').forEach(btn => {
       btn.addEventListener('click', () => openEditor(btn.dataset.email, btn.dataset.week));
@@ -499,7 +476,6 @@
       btn.addEventListener('click', () => { state.availWeek = btn.dataset.week; render(); });
     });
   }
-
   // ---------- editor ----------
   function openEditor(email, week) {
     const person = state.people.find(p => p.email === email);
@@ -513,7 +489,6 @@
       id: e.id, project: e.project, days: e.days, comment: e.comment
     }));
     if (editor.lines.length === 0) editor.lines.push({ id: '', project: '', days: '', comment: '' });
-
     document.getElementById('m-title').textContent = person.name;
     document.getElementById('m-sub').textContent = 'Week of ' + fmtWeek(week) + ' (' + week + ')';
     renderEditor();
@@ -522,7 +497,6 @@
   function closeEditor() {
     document.getElementById('overlay').classList.remove('open');
   }
-
   function renderEditor() {
     // availability buttons
     const ab = document.getElementById('m-avail');
@@ -538,14 +512,12 @@
       });
       ab.appendChild(b);
     });
-
     // lines
     const lc = document.getElementById('m-lines');
     lc.innerHTML = '';
     editor.lines.forEach((line, i) => {
       const row = document.createElement('div');
       row.className = 'line';
-
       const sel = document.createElement('select');
       const opt0 = document.createElement('option');
       opt0.value = ''; opt0.textContent = '— pick a project —';
@@ -569,7 +541,6 @@
       }
       sel.addEventListener('change', () => { line.project = sel.value; });
       row.appendChild(sel);
-
       const days = document.createElement('input');
       days.type = 'number'; days.min = '0'; days.max = String(MAX_DAYS); days.step = '0.5';
       days.placeholder = '0';
@@ -579,14 +550,12 @@
         updateEditorTotal();
       });
       row.appendChild(days);
-
       const com = document.createElement('input');
       com.type = 'text'; com.placeholder = 'Comment (optional)';
       com.maxLength = 300;
       com.value = line.comment || '';
       com.addEventListener('input', () => { line.comment = com.value; });
       row.appendChild(com);
-
       const del = document.createElement('button');
       del.type = 'button'; del.className = 'del'; del.textContent = '✕'; del.title = 'Remove this line';
       del.addEventListener('click', () => {
@@ -595,13 +564,10 @@
         renderEditor();
       });
       row.appendChild(del);
-
       lc.appendChild(row);
     });
-
     updateEditorTotal();
   }
-
   function editorTotal() {
     return editor.lines.reduce((a, l) => a + (parseFloat(l.days) || 0), 0);
   }
@@ -618,15 +584,12 @@
       warn.textContent = '';
     }
   }
-
   async function saveEditor() {
     const btn = document.getElementById('m-save');
-    btn.disabled = true; btn.textContent = 'Saving…';
-
+    btn.disabled = true; btn.textContent = 'Saving...';
     const kept = editor.lines.filter(l => (l.project && l.project.trim()) || parseFloat(l.days) > 0);
     kept.forEach(l => { if (!l.id) l.id = genId(); });
     const keptIds = new Set(kept.map(l => l.id));
-
     const posts = [];
     // upserts
     kept.forEach(l => {
@@ -665,14 +628,12 @@
         posts.push({ formType: 'capacity', action: 'delete', entry: { id: id } });
       }
     });
-
     try {
       await Promise.all(posts.map(p => fetch(APPS_SCRIPT_URL, {
         method: 'POST', mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(p)
+        body: JSON.stringify(Object.assign({ key: dpKey() }, p))
       })));
-
       // optimistic local update
       state.entries = state.entries.filter(e => !(e.personEmail === editor.email && e.week === editor.week));
       kept.forEach(l => state.entries.push({
@@ -697,25 +658,24 @@
       btn.disabled = false; btn.textContent = 'Save';
     }
   }
-
   function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2600);
   }
-
   // ---------- data ----------
   async function load(silent) {
     const btn = document.getElementById('refresh-btn');
     btn.disabled = true;
     if (!silent) {
       document.getElementById('content').innerHTML =
-        '<div class="state"><span class="spinner"></span>Loading the capacity plan…</div>';
+        '<div class="state"><span class="spinner"></span>Loading the capacity plan...</div>';
     }
     try {
-      const resp = await fetch(APPS_SCRIPT_URL + '?action=capacity', { method: 'GET' });
+      const resp = await fetch(APPS_SCRIPT_URL + '?action=capacity' + dpQ(), { method: 'GET' });
       const data = await resp.json();
+      if (data && data.error === 'unauthorized') { dpAuthFailed(); return; }
       if (!data.ok) throw new Error(data.error || 'Bad response');
       state.entries = Array.isArray(data.entries) ? data.entries : [];
       state.people = Array.isArray(data.people) ? data.people : [];
@@ -733,7 +693,6 @@
       btn.disabled = false;
     }
   }
-
   function fillMePicker() {
     const sel = document.getElementById('me');
     const current = state.me;
@@ -745,7 +704,6 @@
       sel.appendChild(o);
     });
   }
-
   // ---------- wiring ----------
   document.getElementById('me').addEventListener('change', e => {
     state.me = e.target.value;
@@ -786,7 +744,6 @@
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeEditor();
   });
-
   load(false);
 </script>
 </body>
