@@ -56,26 +56,6 @@
   .hstat .bar i { display: block; height: 100%; background: var(--amber); border-radius: 3px; transition: width 0.3s; }
   .hstat .bar i.hot { background: var(--red); }
 
-  /* ---- BANNERS ---- */
-  .banner {
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 16px; border-radius: 10px; margin-bottom: 14px;
-    font-size: 13px; font-weight: 500;
-  }
-  .banner.pick { background: var(--amber-soft); border-left: 4px solid var(--amber); color: var(--navy); }
-  .banner.todo { background: #E0F2F4; border-left: 4px solid var(--teal); color: var(--navy); }
-  .banner button {
-    margin-left: auto; border: 0; background: var(--navy); color: white;
-    padding: 7px 14px; border-radius: 7px; font-family: inherit;
-    font-size: 11.5px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
-  }
-  .banner select {
-    margin-left: auto; padding: 8px 12px; border: 1px solid var(--navy);
-    border-radius: 8px; font-family: inherit; font-size: 13px;
-    background: white; color: var(--navy); font-weight: 600; min-width: 190px; cursor: pointer;
-  }
-  .banner select:focus { outline: none; box-shadow: 0 0 0 3px rgba(63,166,184,0.2); }
-
   /* ---- TOOLBAR ---- */
   .toolbar {
     background: var(--card); border: 1px solid var(--border); border-radius: 12px;
@@ -90,24 +70,6 @@
     cursor: pointer; transition: all 0.15s;
   }
   .tabs button.active { background: var(--navy); color: white; }
-  .whoami { display: flex; align-items: center; gap: 8px; }
-  .whoami .you {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: var(--sub-bg); border: 1px solid var(--border);
-    padding: 7px 12px; border-radius: 18px; font-size: 12.5px; color: var(--navy);
-  }
-  .whoami .you b { font-weight: 700; }
-  .whoami .you .avatar {
-    width: 20px; height: 20px; border-radius: 50%; background: var(--amber);
-    color: var(--navy); font-size: 9px; font-weight: 800;
-    display: inline-flex; align-items: center; justify-content: center;
-  }
-  .whoami button {
-    border: 0; background: transparent; color: var(--muted);
-    font-family: inherit; font-size: 11.5px; font-weight: 600;
-    cursor: pointer; text-decoration: underline; padding: 0;
-  }
-  .whoami button:hover { color: var(--teal); }
   .chips { display: flex; gap: 6px; align-items: center; }
   .chips .lbl { font-size: 11px; color: var(--muted); font-weight: 600; }
   .chips button {
@@ -199,11 +161,6 @@
     position: sticky; left: 0; z-index: 1;
     border-right: 1px solid var(--border);
   }
-  table.cap td.person-cell .mytag {
-    background: var(--amber); color: var(--navy); font-size: 9px; font-weight: 800;
-    padding: 1px 6px; border-radius: 8px; margin-left: 6px; letter-spacing: 0.5px;
-  }
-  table.cap tr.me td.person-cell { border-left: 4px solid var(--amber); background: #FFF6E3; }
   table.cap td.week-cell { padding: 0; text-align: center; min-width: 128px; background: white; }
   table.cap td.total-cell {
     text-align: center; font-size: 12.5px; font-weight: 700; color: var(--navy);
@@ -215,17 +172,13 @@
     transition: background 0.12s; position: relative;
   }
   .cellbtn:hover { background: #F0F7FA; }
-  .cellbtn.locked { cursor: default; }
-  .cellbtn.locked:hover { background: #FAFAF8; }
   .cellbtn .tot { font-size: 14px; font-weight: 700; color: var(--navy); }
   .cellbtn .sub { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
   .cellbtn .plus { font-size: 18px; color: #C9C3B4; font-weight: 300; }
   .cellbtn:hover .plus { color: var(--teal); }
-  .cellbtn .empty-locked { font-size: 11px; color: #C9C3B4; }
   td.week-cell.over { background: var(--red-bg); }
   td.week-cell.over .tot { color: var(--red); }
   td.week-cell.conge { background: #F3F4F6; }
-  td.week-cell.mine .cellbtn { box-shadow: inset 0 0 0 1px rgba(245,166,35,0.35); }
 
   /* ---- AVAILABILITY VIEW ---- */
   .avail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
@@ -339,22 +292,6 @@
   .mfoot .save:hover { background: #E5961F; }
   .mfoot .save:disabled { background: #E5E7EB; color: #9CA3AF; cursor: wait; box-shadow: none; }
 
-  /* read-only view of someone else's week */
-  .ro-note {
-    background: var(--sub-bg); border-left: 4px solid var(--teal);
-    padding: 10px 14px; border-radius: 8px; font-size: 12px; color: var(--navy);
-    margin-bottom: 16px; line-height: 1.5;
-  }
-  .ro-line {
-    display: flex; align-items: center; gap: 10px; padding: 9px 0;
-    border-bottom: 1px solid var(--sub-bg); font-size: 13px;
-  }
-  .ro-line:last-child { border-bottom: 0; }
-  .ro-line .pj { flex: 1; color: var(--navy); font-weight: 500; word-break: break-word; }
-  .ro-line .cm { flex: 1.2; color: var(--muted); font-size: 12px; font-style: italic; }
-  .ro-line .dy { font-weight: 700; color: var(--navy); }
-  .ro-empty { font-size: 12.5px; color: var(--muted); font-style: italic; padding: 10px 0; }
-
   .state { text-align: center; padding: 60px 20px; color: var(--muted); font-style: italic; }
   .state.error { color: var(--red); font-style: normal; font-weight: 500; }
   .spinner {
@@ -387,7 +324,7 @@
     <img src="./Datapilot_logo.png" alt="Datapilot" class="logo">
     <div class="header-text">
       <h1>Capacity Tracker</h1>
-      <p>Plan ahead: your <b>days per project</b> for the coming weeks. Click your cell, fill it in. You edit only your own weeks.</p>
+      <p>Plan ahead: <b>days per project</b> for the coming weeks. Click any cell to fill it in. Everyone can edit.</p>
     </div>
     <div class="header-stats">
       <div class="hstat">
@@ -403,14 +340,11 @@
     </div>
   </header>
 
-  <div id="banners"></div>
-
   <div class="toolbar">
     <div class="tabs">
       <button id="tab-grid" class="active">Planning grid</button>
       <button id="tab-avail">Who's available</button>
     </div>
-    <div class="whoami" id="whoami"></div>
     <div class="chips" id="week-chips">
       <span class="lbl">Weeks:</span>
       <button data-n="2" class="on">2</button>
@@ -429,7 +363,6 @@
     <span>🔴 Chargé</span>
     <span>⚪ Congé</span>
     <span style="color:var(--red)">⚠ over <span id="legend-max">5</span> days planned</span>
-    <span>🔒 someone else's week (read-only)</span>
   </div>
 
   <div id="content"><div class="state"><span class="spinner"></span>Loading the capacity plan…</div></div>
@@ -481,12 +414,10 @@
     { key: 'Congé',      emoji: '⚪' }
   ];
 
-  const LS_ME = 'cap_me';
   const LS_HIDDEN = 'cap_hidden';
 
   const state = {
     entries: [], people: [], projects: [],
-    me: lsGet(LS_ME, ''),
     hidden: new Set(lsGetJson(LS_HIDDEN, [])),
     weekCount: 2, view: 'grid', availWeek: ''
   };
@@ -554,28 +485,6 @@
   function visiblePeople() {
     return state.people.filter(p => !state.hidden.has(norm(p.email)));
   }
-  function isMe(email) { return !!state.me && norm(email) === norm(state.me); }
-  // The stored identity only counts if that person still exists in the team list.
-  function meIsKnown() {
-    return !!state.me && state.people.some(p => norm(p.email) === norm(state.me));
-  }
-  function meName() {
-    const p = state.people.find(x => norm(x.email) === norm(state.me));
-    return p ? p.name : '';
-  }
-  function setMe(email) {
-    state.me = email || '';
-    lsSet(LS_ME, state.me);
-    if (state.me && state.hidden.has(norm(state.me))) {   // never hide yourself
-      state.hidden.delete(norm(state.me));
-      lsSet(LS_HIDDEN, JSON.stringify(Array.from(state.hidden)));
-    }
-    render();
-  }
-  function initials(name) {
-    const parts = String(name).trim().split(/\s+/);
-    return ((parts[0] || '')[0] || '').toUpperCase() + ((parts[1] || '')[0] || '').toUpperCase();
-  }
   function cellEntries(email, week) {
     const e = norm(email);
     return state.entries.filter(x => norm(x.personEmail) === e && x.week === week);
@@ -608,8 +517,6 @@
   // ---------- rendering ----------
   function render() {
     updateStats();
-    renderWhoami();
-    renderBanners();
     renderPeopleCount();
     const el = document.getElementById('content');
     if (state.people.length === 0) {
@@ -643,42 +550,6 @@
     document.getElementById('legend-max').textContent = PERSON_WEEK_CAPACITY;
   }
 
-  function renderWhoami() {
-    const el = document.getElementById('whoami');
-    if (!meIsKnown()) { el.innerHTML = ''; return; }
-    el.innerHTML =
-      '<span class="you"><span class="avatar">' + esc(initials(meName())) + '</span>' +
-      'You: <b>' + esc(meName()) + '</b></span>' +
-      '<button type="button" id="who-change">change</button>';
-    document.getElementById('who-change').addEventListener('click', () => setMe(''));
-  }
-
-  function renderBanners() {
-    const box = document.getElementById('banners');
-    box.innerHTML = '';
-
-    if (!meIsKnown()) {
-      let opts = '<option value="">Pick your name</option>';
-      state.people.forEach(p => {
-        opts += '<option value="' + esc(p.email) + '">' + esc(p.name) + '</option>';
-      });
-      box.innerHTML =
-        '<div class="banner pick"><span>👋 Who are you? Everyone plans their own weeks, ' +
-        'so pick your name to start.</span>' +
-        '<select id="who-select">' + opts + '</select></div>';
-      document.getElementById('who-select').addEventListener('change', e => setMe(e.target.value));
-      return;
-    }
-
-    const wk = currentMondayIso();
-    if (!hasFilled(state.me, wk)) {
-      box.innerHTML = '<div class="banner todo">📅 You haven\'t planned <b>this week</b> yet.' +
-        '<button id="plan-now">Plan it now</button></div>';
-      const b = document.getElementById('plan-now');
-      if (b) b.addEventListener('click', () => openCell(state.me, wk));
-    }
-  }
-
   function renderGrid() {
     const wks = weeks();
     let html = '<div class="grid-scroll"><table class="cap"><thead><tr>';
@@ -697,9 +568,8 @@
     html += '<th>Total</th></tr></thead><tbody>';
 
     visiblePeople().forEach(p => {
-      const mine = isMe(p.email);
-      html += '<tr' + (mine ? ' class="me"' : '') + '>';
-      html += '<td class="person-cell">' + esc(p.name) + (mine ? '<span class="mytag">you</span>' : '') + '</td>';
+      html += '<tr>';
+      html += '<td class="person-cell">' + esc(p.name) + '</td>';
       let rowTotal = 0;
       wks.forEach(w => {
         const lines = realLines(p.email, w);
@@ -711,11 +581,10 @@
         let cls = 'week-cell';
         if (over) cls += ' over';
         else if (isConge) cls += ' conge';
-        if (mine) cls += ' mine';
 
         let inner;
         if (lines.length === 0 && !avail) {
-          inner = mine ? '<span class="plus">+</span>' : '<span class="empty-locked"></span>';
+          inner = '<span class="plus">+</span>';
         } else if (lines.length === 0) {
           inner = '<div class="tot">' + emojiOf(avail) + '</div><div class="sub">' + esc(avail) + '</div>';
         } else {
@@ -723,8 +592,8 @@
                   '<div class="sub">' + lines.length + ' project' + (lines.length > 1 ? 's' : '') + '</div>';
         }
         html += '<td class="' + cls + '">' +
-          '<button class="cellbtn' + (mine ? '' : ' locked') + '" data-email="' + esc(p.email) + '" data-week="' + w + '" ' +
-          'title="' + (mine ? 'Click to edit your week' : esc(p.name) + ' (read-only)') + '">' +
+          '<button class="cellbtn" data-email="' + esc(p.email) + '" data-week="' + w + '" ' +
+          'title="Click to edit">' +
           inner + '</button></td>';
       });
       html += '<td class="total-cell">' + fmt(rowTotal) + ' d</td>';
@@ -818,44 +687,16 @@
     panel.classList.add('open');
   }
 
-  // ---------- open a cell: edit (mine) or read-only (others) ----------
+  // ---------- open a cell ----------
   function openCell(email, week) {
     const person = state.people.find(p => norm(p.email) === norm(email));
     if (!person) return;
     document.getElementById('m-title').textContent = person.name;
     document.getElementById('m-sub').textContent = 'Week of ' + fmtWeek(week) + ' (' + week + ')';
-    if (isMe(email)) openEditor(person, week);
-    else openReadOnly(person, week);
+    openEditor(person, week);
     document.getElementById('overlay').classList.add('open');
   }
   function closeModal() { document.getElementById('overlay').classList.remove('open'); }
-
-  function openReadOnly(person, week) {
-    const lines = realLines(person.email, week);
-    const avail = cellAvail(person.email, week);
-    const total = cellTotal(person.email, week);
-    let html = '<div class="ro-note">🔒 This is <b>' + esc(person.name) + '</b>\'s week. Everyone plans their own. ' +
-      'Use <b>change</b> next to your name in the toolbar if this should be you.</div>';
-    html += '<p class="mlabel">Availability</p>';
-    html += '<div style="font-size:14px;margin-bottom:16px">' +
-      (avail ? emojiOf(avail) + ' ' + esc(avail) : '<span class="ro-empty">Not set</span>') + '</div>';
-    html += '<p class="mlabel">Planned projects</p>';
-    if (lines.length === 0) {
-      html += '<div class="ro-empty">Nothing planned for this week.</div>';
-    } else {
-      lines.forEach(l => {
-        html += '<div class="ro-line">' +
-          '<span class="pj">' + esc(l.project || OTHER_PROJECT) + '</span>' +
-          '<span class="cm">' + (l.comment ? esc(l.comment) : '') + '</span>' +
-          '<span class="dy">' + fmt(l.days) + ' d</span></div>';
-      });
-      html += '<div class="mtotal"><span>Total planned</span><span class="v">' + fmt(total) + ' d</span></div>';
-    }
-    document.getElementById('m-body').innerHTML = html;
-    document.getElementById('m-foot').innerHTML =
-      '<span class="spread">Read-only</span><button class="cancel" id="m-cancel">Close</button>';
-    document.getElementById('m-cancel').addEventListener('click', closeModal);
-  }
 
   function openEditor(person, week) {
     editor.email = person.email;
@@ -1091,7 +932,6 @@
   }
 
   async function saveEditor() {
-    if (!isMe(editor.email)) { showToast('You can only edit your own week'); return; }
     const btn = document.getElementById('m-save');
     btn.disabled = true; btn.textContent = 'Saving…';
 
@@ -1196,7 +1036,7 @@
     renderPeopleList(); render();
   });
   document.getElementById('people-none').addEventListener('click', () => {
-    state.people.forEach(p => { if (!isMe(p.email)) state.hidden.add(norm(p.email)); });
+    state.people.forEach(p => state.hidden.add(norm(p.email)));
     lsSet(LS_HIDDEN, JSON.stringify(Array.from(state.hidden)));
     renderPeopleList(); render();
   });
