@@ -35,22 +35,42 @@
     color: var(--text);
     padding-bottom: 60px;
   }
-  .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px; }
+
   header.top {
     background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
-    color: white; padding: 26px 28px; border-radius: 16px;
-    margin-bottom: 18px; display: flex; align-items: center; gap: 24px;
+    color: white; padding: 24px 28px; border-radius: 16px;
+    margin-bottom: 16px; display: flex; align-items: center; gap: 24px;
     box-shadow: 0 4px 16px rgba(15, 42, 61, 0.15);
   }
-  header.top img.logo { height: 52px; width: auto; flex-shrink: 0; }
+  header.top img.logo { height: 50px; width: auto; flex-shrink: 0; }
   header.top .header-text { flex: 1; }
-  header.top h1 { margin: 0 0 4px 0; font-size: 21px; font-weight: 700; letter-spacing: -0.5px; }
+  header.top h1 { margin: 0 0 3px 0; font-size: 21px; font-weight: 700; letter-spacing: -0.5px; }
   header.top p { margin: 0; font-size: 12.5px; opacity: 0.85; font-weight: 300; }
   header.top b { color: var(--amber); font-weight: 600; }
-  .header-stats { display: flex; gap: 22px; }
-  .hstat { text-align: center; }
-  .hstat .n { font-size: 22px; font-weight: 700; color: var(--amber); }
+  .header-stats { display: flex; gap: 26px; }
+  .hstat { text-align: center; min-width: 96px; }
+  .hstat .n { font-size: 21px; font-weight: 700; color: var(--amber); line-height: 1.2; }
   .hstat .l { font-size: 9.5px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
+  .hstat .bar { height: 4px; background: rgba(255,255,255,0.18); border-radius: 3px; margin-top: 6px; overflow: hidden; }
+  .hstat .bar i { display: block; height: 100%; background: var(--amber); border-radius: 3px; transition: width 0.3s; }
+  .hstat .bar i.hot { background: var(--red); }
+
+  /* ---- BANNERS ---- */
+  .banner {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; border-radius: 10px; margin-bottom: 14px;
+    font-size: 13px; font-weight: 500;
+  }
+  .banner.pick { background: var(--amber-soft); border-left: 4px solid var(--amber); color: var(--navy); }
+  .banner.todo { background: #E0F2F4; border-left: 4px solid var(--teal); color: var(--navy); }
+  .banner button {
+    margin-left: auto; border: 0; background: var(--navy); color: white;
+    padding: 7px 14px; border-radius: 7px; font-family: inherit;
+    font-size: 11.5px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  /* ---- TOOLBAR ---- */
   .toolbar {
     background: var(--card); border: 1px solid var(--border); border-radius: 12px;
     padding: 12px 16px; margin-bottom: 16px;
@@ -68,8 +88,9 @@
   .me-picker label { font-size: 12px; font-weight: 600; color: var(--navy); }
   .me-picker select {
     padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
-    font-family: inherit; font-size: 13px; background: white; min-width: 160px;
+    font-family: inherit; font-size: 13px; background: white; min-width: 170px;
   }
+  .me-picker select.unset { border-color: var(--amber); background: #FFFBF2; }
   .chips { display: flex; gap: 6px; align-items: center; }
   .chips .lbl { font-size: 11px; color: var(--muted); font-weight: 600; }
   .chips button {
@@ -78,6 +99,16 @@
     color: var(--navy); cursor: pointer; transition: all 0.15s;
   }
   .chips button.on { background: var(--navy); color: white; border-color: var(--navy); }
+  button.ghost {
+    border: 1px solid var(--border); background: white; color: var(--navy);
+    padding: 8px 14px; border-radius: 8px; font-family: inherit;
+    font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  }
+  button.ghost:hover { border-color: var(--teal); color: var(--teal); }
+  button.ghost .count {
+    background: var(--navy); color: white; border-radius: 9px;
+    font-size: 10px; padding: 1px 6px; font-weight: 700;
+  }
   button.refresh {
     border: 0; background: var(--amber); color: var(--navy); padding: 8px 16px;
     border-radius: 8px; font-family: inherit; font-size: 12px; font-weight: 700;
@@ -87,45 +118,98 @@
   button.refresh:hover { background: #E5961F; }
   button.refresh:disabled { background: #E5E7EB; color: #9CA3AF; cursor: wait; box-shadow: none; }
   .meta { font-size: 11px; color: var(--muted); font-style: italic; margin-left: auto; }
-  .legend { display: flex; gap: 16px; margin: 0 2px 14px 2px; font-size: 11.5px; color: var(--muted); flex-wrap: wrap; }
+
+  /* ---- PEOPLE FILTER PANEL ---- */
+  .people-panel {
+    position: fixed; z-index: 300; background: white;
+    border: 1px solid var(--navy); border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(15,42,61,0.22);
+    width: 300px; display: none; overflow: hidden;
+  }
+  .people-panel.open { display: block; }
+  .people-panel .ph {
+    padding: 12px 14px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .people-panel .ph strong { font-size: 12px; color: var(--navy); flex: 1; }
+  .people-panel .ph button {
+    border: 0; background: var(--sub-bg); color: var(--navy);
+    font-size: 10.5px; font-weight: 700; padding: 5px 9px; border-radius: 6px;
+    cursor: pointer; font-family: inherit; text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  .people-panel .plist { max-height: 320px; overflow-y: auto; padding: 6px 0; }
+  .people-panel .prow {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px; font-size: 13px; color: var(--navy); cursor: pointer;
+  }
+  .people-panel .prow:hover { background: #F0F7FA; }
+  .people-panel .prow input { width: 15px; height: 15px; accent-color: var(--teal); cursor: pointer; }
+  .people-panel .pf {
+    padding: 9px 14px; border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--muted); font-style: italic; line-height: 1.45;
+  }
+
+  .legend { display: flex; gap: 16px; margin: 0 2px 14px 2px; font-size: 11.5px; color: var(--muted); flex-wrap: wrap; align-items: center; }
   .legend span { display: inline-flex; align-items: center; gap: 5px; }
+
   /* ---- GRID ---- */
   .grid-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-  table.cap { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 640px; }
+  table.cap { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 700px; }
   table.cap th, table.cap td { border-bottom: 1px solid var(--border); }
   table.cap thead th {
-    background: var(--navy); color: white; padding: 11px 12px;
+    background: var(--navy); color: white; padding: 10px 12px;
     font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600;
-    text-align: center; position: sticky; top: 0; z-index: 2;
+    text-align: center; position: sticky; top: 0; z-index: 3;
   }
-  table.cap thead th.person-col { text-align: left; }
+  table.cap thead th.person-col { text-align: left; left: 0; z-index: 4; }
   table.cap thead th .wk-badge {
     display: block; font-size: 9px; color: var(--amber); letter-spacing: 0.8px;
     margin-top: 2px; font-weight: 700;
   }
+  table.cap thead th .load {
+    display: block; margin-top: 6px; font-size: 9.5px; font-weight: 500;
+    opacity: 0.85; letter-spacing: 0;
+  }
+  table.cap thead th .loadbar {
+    display: block; height: 3px; background: rgba(255,255,255,0.18);
+    border-radius: 2px; margin-top: 3px; overflow: hidden;
+  }
+  table.cap thead th .loadbar i { display: block; height: 100%; background: var(--amber); border-radius: 2px; }
+  table.cap thead th .loadbar i.hot { background: var(--red); }
   table.cap td.person-cell {
     padding: 10px 14px; font-size: 13px; font-weight: 500; color: var(--navy);
     background: var(--sub-bg); white-space: nowrap;
     position: sticky; left: 0; z-index: 1;
     border-right: 1px solid var(--border);
   }
+  table.cap td.person-cell .mytag {
+    background: var(--amber); color: var(--navy); font-size: 9px; font-weight: 800;
+    padding: 1px 6px; border-radius: 8px; margin-left: 6px; letter-spacing: 0.5px;
+  }
   table.cap tr.me td.person-cell { border-left: 4px solid var(--amber); background: #FFF6E3; }
-  table.cap td.week-cell {
-    padding: 0; text-align: center; min-width: 130px; background: white;
+  table.cap td.week-cell { padding: 0; text-align: center; min-width: 128px; background: white; }
+  table.cap td.total-cell {
+    text-align: center; font-size: 12.5px; font-weight: 700; color: var(--navy);
+    background: var(--sub-bg); min-width: 74px;
   }
   .cellbtn {
-    display: block; width: 100%; height: 100%; padding: 10px 8px;
+    display: block; width: 100%; height: 100%; padding: 11px 8px;
     border: 0; background: transparent; cursor: pointer; font-family: inherit;
-    transition: background 0.12s;
+    transition: background 0.12s; position: relative;
   }
   .cellbtn:hover { background: #F0F7FA; }
+  .cellbtn.locked { cursor: default; }
+  .cellbtn.locked:hover { background: #FAFAF8; }
   .cellbtn .tot { font-size: 14px; font-weight: 700; color: var(--navy); }
   .cellbtn .sub { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
   .cellbtn .plus { font-size: 18px; color: #C9C3B4; font-weight: 300; }
   .cellbtn:hover .plus { color: var(--teal); }
+  .cellbtn .empty-locked { font-size: 11px; color: #C9C3B4; }
   td.week-cell.over { background: var(--red-bg); }
   td.week-cell.over .tot { color: var(--red); }
   td.week-cell.conge { background: #F3F4F6; }
+  td.week-cell.mine .cellbtn { box-shadow: inset 0 0 0 1px rgba(245,166,35,0.35); }
+
   /* ---- AVAILABILITY VIEW ---- */
   .avail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
   .avail-col {
@@ -142,15 +226,16 @@
   }
   .avail-col .pill .d { font-size: 11px; color: var(--muted); }
   .avail-empty { font-size: 12px; color: var(--muted); font-style: italic; }
+
   /* ---- MODAL ---- */
   .overlay {
     position: fixed; inset: 0; background: rgba(8, 24, 38, 0.55);
     display: none; align-items: flex-start; justify-content: center;
-    padding: 40px 16px; z-index: 100; overflow-y: auto;
+    padding: 40px 16px; z-index: 400; overflow-y: auto;
   }
   .overlay.open { display: flex; }
   .modal {
-    background: white; border-radius: 16px; width: 100%; max-width: 640px;
+    background: white; border-radius: 16px; width: 100%; max-width: 660px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden;
   }
   .modal .mhead {
@@ -165,7 +250,22 @@
     width: 32px; height: 32px; border-radius: 8px; font-size: 16px; cursor: pointer;
   }
   .modal .mbody { padding: 20px 24px; }
-  .mlabel { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--navy); margin: 0 0 8px 0; }
+  .mlabel {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--navy); margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px;
+  }
+  .mlabel .auto {
+    background: var(--sub-bg); color: var(--muted); font-size: 9px;
+    padding: 2px 7px; border-radius: 8px; letter-spacing: 0.3px; font-weight: 600;
+  }
+  .quick { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .quick button {
+    border: 1px dashed var(--border); background: var(--sub-bg); color: var(--navy);
+    padding: 7px 12px; border-radius: 8px; font-family: inherit;
+    font-size: 11.5px; font-weight: 600; cursor: pointer;
+  }
+  .quick button:hover { border-color: var(--teal); color: var(--teal); }
+  .quick button:disabled { opacity: 0.45; cursor: not-allowed; }
   .avail-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
   .avail-btns button {
     flex: 1; min-width: 110px; border: 1.5px solid var(--border); background: white;
@@ -175,9 +275,7 @@
   .avail-btns button:hover { border-color: var(--teal); }
   .avail-btns button.sel { border-color: var(--navy); background: var(--navy); color: white; }
   .lines { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
-  .line {
-    display: grid; grid-template-columns: 1.6fr 84px 1.4fr 34px; gap: 8px; align-items: center;
-  }
+  .line { display: grid; grid-template-columns: 1.6fr 84px 1.4fr 34px; gap: 8px; align-items: center; }
   .line select, .line input {
     padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px;
     font-family: inherit; font-size: 12.5px; background: white; width: 100%;
@@ -189,7 +287,11 @@
     width: 34px; height: 36px; cursor: pointer; font-size: 14px;
   }
   .line .del:hover { background: var(--red-bg); color: var(--red); }
-  .line-headers { display: grid; grid-template-columns: 1.6fr 84px 1.4fr 34px; gap: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); font-weight: 600; margin-bottom: 6px; padding: 0 2px; }
+  .line-headers {
+    display: grid; grid-template-columns: 1.6fr 84px 1.4fr 34px; gap: 8px;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--muted); font-weight: 600; margin-bottom: 6px; padding: 0 2px;
+  }
   button.addline {
     border: 1px dashed var(--border); background: var(--sub-bg); color: var(--navy);
     padding: 9px 14px; border-radius: 9px; font-family: inherit; font-size: 12px;
@@ -202,10 +304,15 @@
     font-size: 13px; font-weight: 600; color: var(--navy);
   }
   .mtotal .v { font-size: 17px; font-weight: 700; }
+  .mtotal .rest { font-size: 11.5px; color: var(--muted); font-weight: 500; margin-left: 10px; }
   .mtotal.over { background: var(--red-bg); }
   .mtotal.over .v { color: var(--red); }
+  .mtotal.full { background: var(--green-bg); }
+  .mtotal.full .v { color: var(--green); }
   .mwarn { font-size: 11.5px; color: var(--red); font-weight: 500; min-height: 16px; margin-top: 6px; }
-  .mfoot { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+  .mfoot { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
+  .mfoot .spread { margin-right: auto; font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 7px; }
+  .mfoot .spread input { width: 15px; height: 15px; accent-color: var(--amber); cursor: pointer; }
   .mfoot button {
     padding: 11px 22px; border-radius: 9px; font-family: inherit; font-weight: 700;
     font-size: 12.5px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; border: 0;
@@ -214,6 +321,23 @@
   .mfoot .save { background: var(--amber); color: var(--navy); box-shadow: 0 2px 8px rgba(245,166,35,0.3); }
   .mfoot .save:hover { background: #E5961F; }
   .mfoot .save:disabled { background: #E5E7EB; color: #9CA3AF; cursor: wait; box-shadow: none; }
+
+  /* read-only view of someone else's week */
+  .ro-note {
+    background: var(--sub-bg); border-left: 4px solid var(--teal);
+    padding: 10px 14px; border-radius: 8px; font-size: 12px; color: var(--navy);
+    margin-bottom: 16px; line-height: 1.5;
+  }
+  .ro-line {
+    display: flex; align-items: center; gap: 10px; padding: 9px 0;
+    border-bottom: 1px solid var(--sub-bg); font-size: 13px;
+  }
+  .ro-line:last-child { border-bottom: 0; }
+  .ro-line .pj { flex: 1; color: var(--navy); font-weight: 500; word-break: break-word; }
+  .ro-line .cm { flex: 1.2; color: var(--muted); font-size: 12px; font-style: italic; }
+  .ro-line .dy { font-weight: 700; color: var(--navy); }
+  .ro-empty { font-size: 12.5px; color: var(--muted); font-style: italic; padding: 10px 0; }
+
   .state { text-align: center; padding: 60px 20px; color: var(--muted); font-style: italic; }
   .state.error { color: var(--red); font-style: normal; font-weight: 500; }
   .spinner {
@@ -224,18 +348,19 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   .toast {
-    position: fixed; bottom: 24px; right: 24px; z-index: 200;
+    position: fixed; bottom: 24px; right: 24px; z-index: 500;
     background: var(--navy); color: white; padding: 12px 20px; border-radius: 10px;
     font-size: 13px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
     opacity: 0; transform: translateY(10px); transition: all 0.25s; pointer-events: none;
   }
   .toast.show { opacity: 1; transform: translateY(0); }
-  @media (max-width: 700px) {
+
+  @media (max-width: 760px) {
     header.top { flex-direction: column; text-align: center; padding: 20px 16px; }
     .header-stats { justify-content: center; }
     .meta { margin-left: 0; width: 100%; }
-    .line { grid-template-columns: 1.4fr 70px 1fr 30px; gap: 6px; }
-    .line-headers { grid-template-columns: 1.4fr 70px 1fr 30px; gap: 6px; }
+    .line, .line-headers { grid-template-columns: 1.4fr 70px 1fr 30px; gap: 6px; }
+    .people-panel { width: calc(100vw - 32px); }
   }
 </style>
 </head>
@@ -245,13 +370,24 @@
     <img src="./Datapilot_logo.png" alt="Datapilot" class="logo">
     <div class="header-text">
       <h1>Capacity Tracker</h1>
-      <p>Forward-looking planning: estimate your <b>days per project</b> for the coming weeks. One click on a cell to fill it in. Everyone can edit.</p>
+      <p>Plan ahead: your <b>days per project</b> for the coming weeks. Pick your name, click your cell, fill it in.</p>
     </div>
     <div class="header-stats">
-      <div class="hstat"><div class="n" id="stat-filled">–</div><div class="l">Filled this week</div></div>
-      <div class="hstat"><div class="n" id="stat-days">–</div><div class="l">Days planned</div></div>
+      <div class="hstat">
+        <div class="n" id="stat-filled">–</div>
+        <div class="l">Filled this week</div>
+        <div class="bar"><i id="bar-filled" style="width:0%"></i></div>
+      </div>
+      <div class="hstat">
+        <div class="n" id="stat-days">–</div>
+        <div class="l">Team load this week</div>
+        <div class="bar"><i id="bar-days" style="width:0%"></i></div>
+      </div>
     </div>
   </header>
+
+  <div id="banners"></div>
+
   <div class="toolbar">
     <div class="tabs">
       <button id="tab-grid" class="active">Planning grid</button>
@@ -268,19 +404,35 @@
       <button data-n="6">6</button>
       <button data-n="8">8</button>
     </div>
+    <button class="ghost" id="people-btn">People <span class="count" id="people-count">0</span></button>
     <button class="refresh" id="refresh-btn">Refresh</button>
     <span class="meta" id="meta"></span>
   </div>
+
   <div class="legend">
     <span>🟢 Disponible</span>
     <span>🟡 Partiel</span>
     <span>🔴 Chargé</span>
     <span>⚪ Congé</span>
-    <span style="color:var(--red)">⚠ red cell = more than 5 days planned</span>
+    <span style="color:var(--red)">⚠ over <span id="legend-max">5</span> days planned</span>
+    <span>🔒 = someone else's week (read-only)</span>
   </div>
-  <div id="content"><div class="state"><span class="spinner"></span>Loading the capacity plan...</div></div>
+
+  <div id="content"><div class="state"><span class="spinner"></span>Loading the capacity plan…</div></div>
 </div>
-<!-- EDITOR MODAL -->
+
+<!-- PEOPLE FILTER -->
+<div class="people-panel" id="people-panel">
+  <div class="ph">
+    <strong>Show in the grid</strong>
+    <button id="people-all">All</button>
+    <button id="people-none">None</button>
+  </div>
+  <div class="plist" id="people-list"></div>
+  <div class="pf">Hidden people are excluded from the grid and from the stats. Saved in this browser only — to hide someone for the whole team, remove them from the TeamDirectory sheet.</div>
+</div>
+
+<!-- EDITOR / READ-ONLY MODAL -->
 <div class="overlay" id="overlay">
   <div class="modal">
     <div class="mhead">
@@ -290,149 +442,243 @@
       </div>
       <button id="m-close" title="Close">✕</button>
     </div>
-    <div class="mbody">
-      <p class="mlabel">Availability for the week</p>
-      <div class="avail-btns" id="m-avail"></div>
-      <p class="mlabel">Planned projects</p>
-      <div class="line-headers"><span>Project</span><span style="text-align:center">Days</span><span>Comment</span><span></span></div>
-      <div class="lines" id="m-lines"></div>
-      <button class="addline" id="m-addline">+ Add a project</button>
-      <div class="mtotal" id="m-total-box">
-        <span>Total planned</span>
-        <span class="v" id="m-total">0 d</span>
-      </div>
-      <div class="mwarn" id="m-warn"></div>
-    </div>
-    <div class="mfoot">
-      <button class="cancel" id="m-cancel">Cancel</button>
-      <button class="save" id="m-save">Save</button>
-    </div>
+    <div class="mbody" id="m-body"></div>
+    <div class="mfoot" id="m-foot"></div>
   </div>
 </div>
+
 <div class="toast" id="toast"></div>
+
 <script src="./gate.js"></script>
 <script>
   const APPS_SCRIPT_URL = "https://script.google.com/a/macros/datapilot.fr/s/AKfycbyUhfW211pozOYRKOJBZM9vCcRLxDhmsm3OShM1F_1SV2HWaqpg253ekKdu75xZYiWR/exec";
+
+  // ---- CONFIG ----------------------------------------------------
+  // Working days one person can plan in a single week. Used for the
+  // red "over capacity" warning AND as the denominator of the team
+  // load stat (visible people x PERSON_WEEK_CAPACITY).
+  const PERSON_WEEK_CAPACITY = 5;
+  const STEP = 0.5;
+  const OTHER_PROJECT = 'Autre / Interne';
   const AVAIL = [
     { key: 'Disponible', emoji: '🟢' },
     { key: 'Partiel',    emoji: '🟡' },
     { key: 'Chargé',     emoji: '🔴' },
     { key: 'Congé',      emoji: '⚪' }
   ];
-  const MAX_DAYS = 5;
+
+  const LS_ME = 'cap_me';
+  const LS_HIDDEN = 'cap_hidden';
+
   const state = {
     entries: [], people: [], projects: [],
-    me: localStorage.getItem('cap_me') || '',
+    me: lsGet(LS_ME, ''),
+    hidden: new Set(lsGetJson(LS_HIDDEN, [])),
     weekCount: 2, view: 'grid', availWeek: ''
   };
-  const editor = { email: '', name: '', week: '', availability: '', lines: [], existingIds: [] };
-  // ---------- helpers ----------
+
+  const editor = {
+    email: '', name: '', week: '',
+    availability: '', availTouched: false,
+    lines: [], existingIds: [], alsoNextWeek: false
+  };
+
+  // ---------- storage helpers ----------
+  function lsGet(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function lsGetJson(k, d) {
+    try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : d; } catch (e) { return d; }
+  }
+
+  // ---------- generic helpers ----------
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({
       '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
     }[ch]));
   }
+  function norm(e) { return String(e == null ? '' : e).trim().toLowerCase(); }
+  function fmt(n) { return parseFloat((+n || 0).toFixed(2)).toString(); }
+  function genId() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function currentMondayIso() {
     const d = new Date();
     const off = d.getDay() === 0 ? -6 : 1 - d.getDay();
     d.setDate(d.getDate() + off);
-    return d.toISOString().slice(0, 10);
+    return isoOf(d);
+  }
+  function isoOf(d) {
+    // local-date safe (avoids the UTC shift of toISOString)
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + m + '-' + day;
+  }
+  function addWeeks(iso, n) {
+    const d = new Date(iso + 'T00:00:00');
+    d.setDate(d.getDate() + 7 * n);
+    return isoOf(d);
   }
   function weeks() {
     const out = [];
-    const d = new Date(currentMondayIso() + 'T00:00:00');
-    for (let i = 0; i < state.weekCount; i++) {
-      out.push(d.toISOString().slice(0, 10));
-      d.setDate(d.getDate() + 7);
-    }
+    let w = currentMondayIso();
+    for (let i = 0; i < state.weekCount; i++) { out.push(w); w = addWeeks(w, 1); }
     return out;
   }
   function fmtWeek(iso) {
     const d = new Date(iso + 'T00:00:00');
     return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   }
-  function weekBadge(iso, i) {
+  function weekBadge(i) {
     if (i === 0) return 'this week';
     if (i === 1) return 'next week';
     return 'S+' + i;
   }
   function emojiOf(key) {
-    const a = AVAIL.find(a => a.key === key);
+    const a = AVAIL.find(x => x.key === key);
     return a ? a.emoji : '';
   }
-  function genId() {
-    return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  // ---------- data selectors ----------
+  function visiblePeople() {
+    return state.people.filter(p => !state.hidden.has(norm(p.email)));
   }
-  function fmt(n) { return parseFloat((+n).toFixed(2)).toString(); }
+  function isMe(email) { return !!state.me && norm(email) === norm(state.me); }
   function cellEntries(email, week) {
-    return state.entries.filter(e => e.personEmail === email && e.week === week);
+    const e = norm(email);
+    return state.entries.filter(x => norm(x.personEmail) === e && x.week === week);
   }
   function realLines(email, week) {
-    return cellEntries(email, week).filter(e => e.project || e.days > 0);
+    return cellEntries(email, week).filter(x => x.project || x.days > 0);
   }
   function cellTotal(email, week) {
-    return realLines(email, week).reduce((a, e) => a + (e.days || 0), 0);
+    return realLines(email, week).reduce((a, x) => a + (x.days || 0), 0);
   }
   function cellAvail(email, week) {
-    const withA = cellEntries(email, week).find(e => e.availability);
-    return withA ? withA.availability : '';
+    const w = cellEntries(email, week).find(x => x.availability);
+    return w ? w.availability : '';
   }
+  function hasFilled(email, week) { return cellEntries(email, week).length > 0; }
+  function weekLoad(week) {
+    let d = 0;
+    visiblePeople().forEach(p => { d += cellTotal(p.email, week); });
+    return d;
+  }
+  function weekCapacity() { return visiblePeople().length * PERSON_WEEK_CAPACITY; }
+
+  // Suggest an availability from the planned days (user can override).
+  function suggestAvail(totalDays) {
+    if (totalDays <= 0) return 'Disponible';
+    if (totalDays >= PERSON_WEEK_CAPACITY) return 'Chargé';
+    return 'Partiel';
+  }
+
   // ---------- rendering ----------
   function render() {
     updateStats();
+    renderBanners();
+    renderPeopleCount();
     const el = document.getElementById('content');
     if (state.people.length === 0) {
       el.innerHTML = '<div class="state">No team members found (TeamDirectory empty?).</div>';
       return;
     }
+    if (visiblePeople().length === 0) {
+      el.innerHTML = '<div class="state">Everybody is hidden. Open the <b>People</b> filter to show someone.</div>';
+      return;
+    }
     el.innerHTML = state.view === 'grid' ? renderGrid() : renderAvail();
-    wireCells();
+    wireContent();
   }
+
   function updateStats() {
     const wk = currentMondayIso();
-    const filled = state.people.filter(p => cellEntries(p.email, wk).length > 0).length;
-    let days = 0;
-    state.people.forEach(p => { days += cellTotal(p.email, wk); });
-    document.getElementById('stat-filled').textContent = filled + '/' + state.people.length;
-    document.getElementById('stat-days').textContent = fmt(days);
+    const vis = visiblePeople();
+    const filled = vis.filter(p => hasFilled(p.email, wk)).length;
+    const days = weekLoad(wk);
+    const cap = weekCapacity();
+
+    document.getElementById('stat-filled').textContent = filled + ' / ' + vis.length;
+    const fPct = vis.length ? Math.round((filled / vis.length) * 100) : 0;
+    document.getElementById('bar-filled').style.width = fPct + '%';
+
+    const dPct = cap ? Math.round((days / cap) * 100) : 0;
+    document.getElementById('stat-days').textContent = fmt(days) + ' / ' + fmt(cap) + ' d';
+    const bd = document.getElementById('bar-days');
+    bd.style.width = Math.min(dPct, 100) + '%';
+    bd.classList.toggle('hot', days > cap + 0.001);
+    document.getElementById('legend-max').textContent = PERSON_WEEK_CAPACITY;
   }
+
+  function renderBanners() {
+    const box = document.getElementById('banners');
+    box.innerHTML = '';
+    if (!state.me) {
+      box.innerHTML = '<div class="banner pick">👋 Pick your name in <b>“I am”</b> to plan your weeks. ' +
+        'You can only edit your own cells.</div>';
+      return;
+    }
+    const wk = currentMondayIso();
+    if (!hasFilled(state.me, wk)) {
+      box.innerHTML = '<div class="banner todo">📅 You haven\'t planned <b>this week</b> yet.' +
+        '<button id="plan-now">Plan it now</button></div>';
+      const b = document.getElementById('plan-now');
+      if (b) b.addEventListener('click', () => openCell(state.me, wk));
+    }
+  }
+
   function renderGrid() {
     const wks = weeks();
     let html = '<div class="grid-scroll"><table class="cap"><thead><tr>';
     html += '<th class="person-col">Person</th>';
     wks.forEach((w, i) => {
-      html += '<th>' + fmtWeek(w) + '<span class="wk-badge">' + weekBadge(w, i) + '</span></th>';
+      const load = weekLoad(w);
+      const cap = weekCapacity();
+      const pct = cap ? Math.min(Math.round((load / cap) * 100), 100) : 0;
+      const hot = load > cap + 0.001;
+      html += '<th>' + fmtWeek(w) +
+        '<span class="wk-badge">' + weekBadge(i) + '</span>' +
+        '<span class="load">' + fmt(load) + ' / ' + fmt(cap) + ' d</span>' +
+        '<span class="loadbar"><i class="' + (hot ? 'hot' : '') + '" style="width:' + pct + '%"></i></span>' +
+        '</th>';
     });
-    html += '</tr></thead><tbody>';
-    state.people.forEach(p => {
-      const isMe = p.email === state.me;
-      html += '<tr' + (isMe ? ' class="me"' : '') + '>';
-      html += '<td class="person-cell">' + esc(p.name) + (isMe ? ' ✦' : '') + '</td>';
+    html += '<th>Total</th></tr></thead><tbody>';
+
+    visiblePeople().forEach(p => {
+      const mine = isMe(p.email);
+      html += '<tr' + (mine ? ' class="me"' : '') + '>';
+      html += '<td class="person-cell">' + esc(p.name) + (mine ? '<span class="mytag">you</span>' : '') + '</td>';
+      let rowTotal = 0;
       wks.forEach(w => {
         const lines = realLines(p.email, w);
         const total = cellTotal(p.email, w);
+        rowTotal += total;
         const avail = cellAvail(p.email, w);
-        const over = total > MAX_DAYS + 0.001;
+        const over = total > PERSON_WEEK_CAPACITY + 0.001;
         const isConge = avail === 'Congé' && lines.length === 0;
         let cls = 'week-cell';
         if (over) cls += ' over';
         else if (isConge) cls += ' conge';
+        if (mine) cls += ' mine';
+
         let inner;
         if (lines.length === 0 && !avail) {
-          inner = '<span class="plus">+</span>';
+          inner = mine ? '<span class="plus">+</span>' : '<span class="empty-locked">—</span>';
         } else if (lines.length === 0) {
           inner = '<div class="tot">' + emojiOf(avail) + '</div><div class="sub">' + esc(avail) + '</div>';
         } else {
           inner = '<div class="tot">' + emojiOf(avail) + ' ' + fmt(total) + ' d' + (over ? ' ⚠' : '') + '</div>' +
                   '<div class="sub">' + lines.length + ' project' + (lines.length > 1 ? 's' : '') + '</div>';
         }
-        html += '<td class="' + cls + '"><button class="cellbtn" data-email="' + esc(p.email) + '" data-week="' + w + '">' + inner + '</button></td>';
+        html += '<td class="' + cls + '">' +
+          '<button class="cellbtn' + (mine ? '' : ' locked') + '" data-email="' + esc(p.email) + '" data-week="' + w + '" ' +
+          'title="' + (mine ? 'Click to edit your week' : esc(p.name) + '’s week — read-only') + '">' +
+          inner + '</button></td>';
       });
+      html += '<td class="total-cell">' + fmt(rowTotal) + ' d</td>';
       html += '</tr>';
     });
     html += '</tbody></table></div>';
     return html;
   }
+
   function renderAvail() {
     const wks = weeks();
     if (!state.availWeek || wks.indexOf(state.availWeek) === -1) state.availWeek = wks[0];
@@ -442,23 +688,24 @@
               fmtWeek(w) + (i === 0 ? ' (this week)' : i === 1 ? ' (next)' : '') + '</button>';
     });
     html += '</div><div class="avail-grid">';
+
     const groups = {};
     AVAIL.forEach(a => { groups[a.key] = []; });
     const notFilled = [];
-    state.people.forEach(p => {
-      const avail = cellAvail(p.email, state.availWeek);
-      const total = cellTotal(p.email, state.availWeek);
-      const has = cellEntries(p.email, state.availWeek).length > 0;
-      if (!has) { notFilled.push(p); return; }
-      const key = avail || 'Disponible';
-      (groups[key] = groups[key] || []).push({ p, total });
+    visiblePeople().forEach(p => {
+      if (!hasFilled(p.email, state.availWeek)) { notFilled.push(p); return; }
+      const avail = cellAvail(p.email, state.availWeek) || suggestAvail(cellTotal(p.email, state.availWeek));
+      (groups[avail] = groups[avail] || []).push({ p: p, total: cellTotal(p.email, state.availWeek) });
     });
+
     AVAIL.forEach(a => {
       const list = groups[a.key] || [];
       html += '<div class="avail-col"><h3><span>' + a.emoji + ' ' + a.key + '</span><span class="cnt">' + list.length + '</span></h3>';
       if (list.length === 0) html += '<div class="avail-empty">Nobody</div>';
       list.forEach(x => {
-        html += '<div class="pill"><span>' + esc(x.p.name) + '</span><span class="d">' + fmt(x.total) + ' d</span></div>';
+        const free = Math.max(0, PERSON_WEEK_CAPACITY - x.total);
+        html += '<div class="pill"><span>' + esc(x.p.name) + '</span>' +
+          '<span class="d">' + fmt(x.total) + ' d · ' + fmt(free) + ' free</span></div>';
       });
       html += '</div>';
     });
@@ -468,38 +715,174 @@
     html += '</div></div>';
     return html;
   }
-  function wireCells() {
+
+  function wireContent() {
     document.querySelectorAll('.cellbtn').forEach(btn => {
-      btn.addEventListener('click', () => openEditor(btn.dataset.email, btn.dataset.week));
+      btn.addEventListener('click', () => openCell(btn.dataset.email, btn.dataset.week));
     });
     document.querySelectorAll('.avail-week-chip').forEach(btn => {
       btn.addEventListener('click', () => { state.availWeek = btn.dataset.week; render(); });
     });
   }
-  // ---------- editor ----------
-  function openEditor(email, week) {
-    const person = state.people.find(p => p.email === email);
+
+  // ---------- people filter ----------
+  function renderPeopleCount() {
+    document.getElementById('people-count').textContent =
+      visiblePeople().length + '/' + state.people.length;
+  }
+  function renderPeopleList() {
+    const box = document.getElementById('people-list');
+    box.innerHTML = '';
+    state.people.forEach(p => {
+      const row = document.createElement('label');
+      row.className = 'prow';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !state.hidden.has(norm(p.email));
+      cb.addEventListener('change', () => {
+        if (cb.checked) state.hidden.delete(norm(p.email));
+        else state.hidden.add(norm(p.email));
+        lsSet(LS_HIDDEN, JSON.stringify(Array.from(state.hidden)));
+        render();
+      });
+      row.appendChild(cb);
+      const sp = document.createElement('span');
+      sp.textContent = p.name;
+      row.appendChild(sp);
+      box.appendChild(row);
+    });
+  }
+  function togglePeoplePanel() {
+    const panel = document.getElementById('people-panel');
+    const open = panel.classList.contains('open');
+    if (open) { panel.classList.remove('open'); return; }
+    const r = document.getElementById('people-btn').getBoundingClientRect();
+    panel.style.top = (r.bottom + 6) + 'px';
+    panel.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 316)) + 'px';
+    renderPeopleList();
+    panel.classList.add('open');
+  }
+
+  // ---------- open a cell: edit (mine) or read-only (others) ----------
+  function openCell(email, week) {
+    const person = state.people.find(p => norm(p.email) === norm(email));
     if (!person) return;
-    editor.email = email;
-    editor.name = person.name;
-    editor.week = week;
-    editor.availability = cellAvail(email, week);
-    editor.existingIds = cellEntries(email, week).map(e => e.id);
-    editor.lines = realLines(email, week).map(e => ({
-      id: e.id, project: e.project, days: e.days, comment: e.comment
-    }));
-    if (editor.lines.length === 0) editor.lines.push({ id: '', project: '', days: '', comment: '' });
     document.getElementById('m-title').textContent = person.name;
     document.getElementById('m-sub').textContent = 'Week of ' + fmtWeek(week) + ' (' + week + ')';
-    renderEditor();
+    if (isMe(email)) openEditor(person, week);
+    else openReadOnly(person, week);
     document.getElementById('overlay').classList.add('open');
   }
-  function closeEditor() {
-    document.getElementById('overlay').classList.remove('open');
+  function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+
+  function openReadOnly(person, week) {
+    const lines = realLines(person.email, week);
+    const avail = cellAvail(person.email, week);
+    const total = cellTotal(person.email, week);
+    let html = '<div class="ro-note">🔒 This is <b>' + esc(person.name) + '</b>’s week — everyone plans their own. ' +
+      'Switch the <b>“I am”</b> picker to your own name to edit yours.</div>';
+    html += '<p class="mlabel">Availability</p>';
+    html += '<div style="font-size:14px;margin-bottom:16px">' +
+      (avail ? emojiOf(avail) + ' ' + esc(avail) : '<span class="ro-empty">Not set</span>') + '</div>';
+    html += '<p class="mlabel">Planned projects</p>';
+    if (lines.length === 0) {
+      html += '<div class="ro-empty">Nothing planned for this week.</div>';
+    } else {
+      lines.forEach(l => {
+        html += '<div class="ro-line">' +
+          '<span class="pj">' + esc(l.project || '—') + '</span>' +
+          '<span class="cm">' + (l.comment ? esc(l.comment) : '') + '</span>' +
+          '<span class="dy">' + fmt(l.days) + ' d</span></div>';
+      });
+      html += '<div class="mtotal"><span>Total planned</span><span class="v">' + fmt(total) + ' d</span></div>';
+    }
+    document.getElementById('m-body').innerHTML = html;
+    document.getElementById('m-foot').innerHTML =
+      '<span class="spread">Read-only</span><button class="cancel" id="m-cancel">Close</button>';
+    document.getElementById('m-cancel').addEventListener('click', closeModal);
   }
+
+  function openEditor(person, week) {
+    editor.email = person.email;
+    editor.name = person.name;
+    editor.week = week;
+    editor.availability = cellAvail(person.email, week);
+    editor.availTouched = !!editor.availability;
+    editor.existingIds = cellEntries(person.email, week).map(e => e.id);
+    editor.alsoNextWeek = false;
+    editor.lines = realLines(person.email, week).map(e => ({
+      id: e.id, project: e.project, days: e.days, comment: e.comment
+    }));
+    if (editor.lines.length === 0) editor.lines.push(blankLine());
+
+    document.getElementById('m-body').innerHTML =
+      '<div class="quick">' +
+        '<button type="button" id="q-copy">↺ Copy last week</button>' +
+        '<button type="button" id="q-conge">⚪ Full week off</button>' +
+        '<button type="button" id="q-clear">✕ Clear the week</button>' +
+      '</div>' +
+      '<p class="mlabel">Availability <span class="auto" id="avail-auto">auto</span></p>' +
+      '<div class="avail-btns" id="m-avail"></div>' +
+      '<p class="mlabel">Planned projects</p>' +
+      '<div class="line-headers"><span>Project</span><span style="text-align:center">Days</span><span>Comment</span><span></span></div>' +
+      '<div class="lines" id="m-lines"></div>' +
+      '<button class="addline" id="m-addline">+ Add a project</button>' +
+      '<div class="mtotal" id="m-total-box"><span>Total planned</span>' +
+        '<span><span class="v" id="m-total">0 d</span><span class="rest" id="m-rest"></span></span></div>' +
+      '<div class="mwarn" id="m-warn"></div>';
+
+    document.getElementById('m-foot').innerHTML =
+      '<label class="spread"><input type="checkbox" id="m-next"> Also apply to next week</label>' +
+      '<button class="cancel" id="m-cancel">Cancel</button>' +
+      '<button class="save" id="m-save">Save</button>';
+
+    document.getElementById('q-copy').addEventListener('click', copyLastWeek);
+    document.getElementById('q-conge').addEventListener('click', () => {
+      editor.lines = [blankLine()];
+      editor.availability = 'Congé';
+      editor.availTouched = true;
+      renderEditor();
+    });
+    document.getElementById('q-clear').addEventListener('click', () => {
+      editor.lines = [blankLine()];
+      editor.availability = '';
+      editor.availTouched = false;
+      renderEditor();
+    });
+    document.getElementById('m-addline').addEventListener('click', () => {
+      editor.lines.push(blankLine());
+      renderEditor();
+    });
+    document.getElementById('m-next').addEventListener('change', e => { editor.alsoNextWeek = e.target.checked; });
+    document.getElementById('m-cancel').addEventListener('click', closeModal);
+    document.getElementById('m-save').addEventListener('click', saveEditor);
+
+    const copyBtn = document.getElementById('q-copy');
+    copyBtn.disabled = realLines(editor.email, addWeeks(week, -1)).length === 0;
+
+    renderEditor();
+  }
+
+  function blankLine() { return { id: '', project: '', days: '', comment: '' }; }
+
+  function copyLastWeek() {
+    const prev = addWeeks(editor.week, -1);
+    const src = realLines(editor.email, prev);
+    if (src.length === 0) { showToast('Nothing to copy from last week'); return; }
+    editor.lines = src.map(e => ({ id: '', project: e.project, days: e.days, comment: e.comment }));
+    const a = cellAvail(editor.email, prev);
+    if (a) { editor.availability = a; editor.availTouched = true; }
+    renderEditor();
+    showToast('Copied ' + src.length + ' line' + (src.length > 1 ? 's' : '') + ' from last week');
+  }
+
   function renderEditor() {
     // availability buttons
     const ab = document.getElementById('m-avail');
+    if (!ab) return;
+    if (!editor.availTouched) editor.availability = suggestAvail(editorTotal());
+    document.getElementById('avail-auto').style.display = editor.availTouched ? 'none' : 'inline-block';
+
     ab.innerHTML = '';
     AVAIL.forEach(a => {
       const b = document.createElement('button');
@@ -508,16 +891,19 @@
       if (editor.availability === a.key) b.classList.add('sel');
       b.addEventListener('click', () => {
         editor.availability = editor.availability === a.key ? '' : a.key;
+        editor.availTouched = !!editor.availability;
         renderEditor();
       });
       ab.appendChild(b);
     });
-    // lines
+
+    // project lines
     const lc = document.getElementById('m-lines');
     lc.innerHTML = '';
     editor.lines.forEach((line, i) => {
       const row = document.createElement('div');
       row.className = 'line';
+
       const sel = document.createElement('select');
       const opt0 = document.createElement('option');
       opt0.value = ''; opt0.textContent = '— pick a project —';
@@ -529,11 +915,10 @@
         sel.appendChild(o);
       });
       const oOther = document.createElement('option');
-      oOther.value = 'Autre / Interne'; oOther.textContent = 'Autre / Interne';
-      if (line.project === 'Autre / Interne') oOther.selected = true;
+      oOther.value = OTHER_PROJECT; oOther.textContent = OTHER_PROJECT;
+      if (line.project === OTHER_PROJECT) oOther.selected = true;
       sel.appendChild(oOther);
-      // keep an unknown stored project selectable (e.g. project became inactive)
-      if (line.project && line.project !== 'Autre / Interne' && state.projects.indexOf(line.project) === -1) {
+      if (line.project && line.project !== OTHER_PROJECT && state.projects.indexOf(line.project) === -1) {
         const oKeep = document.createElement('option');
         oKeep.value = line.project; oKeep.textContent = line.project + ' (inactive)';
         oKeep.selected = true;
@@ -541,136 +926,169 @@
       }
       sel.addEventListener('change', () => { line.project = sel.value; });
       row.appendChild(sel);
+
       const days = document.createElement('input');
-      days.type = 'number'; days.min = '0'; days.max = String(MAX_DAYS); days.step = '0.5';
+      days.type = 'number'; days.min = '0'; days.max = String(PERSON_WEEK_CAPACITY); days.step = String(STEP);
       days.placeholder = '0';
       if (line.days !== '' && line.days != null) days.value = line.days;
       days.addEventListener('input', () => {
         line.days = days.value === '' ? '' : parseFloat(days.value);
+        if (!editor.availTouched) { editor.availability = suggestAvail(editorTotal()); refreshAvailButtons(); }
         updateEditorTotal();
       });
       row.appendChild(days);
+
       const com = document.createElement('input');
       com.type = 'text'; com.placeholder = 'Comment (optional)';
       com.maxLength = 300;
       com.value = line.comment || '';
       com.addEventListener('input', () => { line.comment = com.value; });
       row.appendChild(com);
+
       const del = document.createElement('button');
       del.type = 'button'; del.className = 'del'; del.textContent = '✕'; del.title = 'Remove this line';
       del.addEventListener('click', () => {
         editor.lines.splice(i, 1);
-        if (editor.lines.length === 0) editor.lines.push({ id: '', project: '', days: '', comment: '' });
+        if (editor.lines.length === 0) editor.lines.push(blankLine());
         renderEditor();
       });
       row.appendChild(del);
+
       lc.appendChild(row);
     });
+
     updateEditorTotal();
   }
+
+  function refreshAvailButtons() {
+    const ab = document.getElementById('m-avail');
+    if (!ab) return;
+    Array.from(ab.children).forEach((b, i) => {
+      b.classList.toggle('sel', AVAIL[i].key === editor.availability);
+    });
+  }
+
   function editorTotal() {
     return editor.lines.reduce((a, l) => a + (parseFloat(l.days) || 0), 0);
   }
   function updateEditorTotal() {
     const t = editorTotal();
-    document.getElementById('m-total').textContent = fmt(t) + ' d';
     const box = document.getElementById('m-total-box');
     const warn = document.getElementById('m-warn');
-    if (t > MAX_DAYS + 0.001) {
-      box.classList.add('over');
-      warn.textContent = '⚠ More than ' + MAX_DAYS + ' days planned for one week — double-check, or save anyway if it\'s real.';
-    } else {
-      box.classList.remove('over');
-      warn.textContent = '';
-    }
+    if (!box) return;
+    document.getElementById('m-total').textContent = fmt(t) + ' d';
+    const rest = PERSON_WEEK_CAPACITY - t;
+    document.getElementById('m-rest').textContent =
+      rest > 0 ? '(' + fmt(rest) + ' d left)' : rest === 0 ? '(week full)' : '';
+    box.classList.toggle('over', t > PERSON_WEEK_CAPACITY + 0.001);
+    box.classList.toggle('full', Math.abs(t - PERSON_WEEK_CAPACITY) < 0.001);
+    warn.textContent = t > PERSON_WEEK_CAPACITY + 0.001
+      ? '⚠ More than ' + PERSON_WEEK_CAPACITY + ' days planned — double-check, or save anyway if it\'s real.'
+      : '';
   }
-  async function saveEditor() {
-    const btn = document.getElementById('m-save');
-    btn.disabled = true; btn.textContent = 'Saving...';
-    const kept = editor.lines.filter(l => (l.project && l.project.trim()) || parseFloat(l.days) > 0);
+
+  // ---------- saving ----------
+  function buildPosts(week, lines, availability, existingIds) {
+    const kept = lines.filter(l => (l.project && String(l.project).trim()) || parseFloat(l.days) > 0);
     kept.forEach(l => { if (!l.id) l.id = genId(); });
     const keptIds = new Set(kept.map(l => l.id));
     const posts = [];
-    // upserts
+
     kept.forEach(l => {
-      posts.push({
-        formType: 'capacity', action: 'upsert',
-        entry: {
-          id: l.id,
-          personEmail: editor.email,
-          personName: editor.name,
-          week: editor.week,
-          project: l.project || '',
-          days: parseFloat(l.days) || 0,
-          availability: editor.availability,
-          comment: l.comment || ''
-        }
-      });
+      posts.push({ formType: 'capacity', action: 'upsert', entry: {
+        id: l.id, personEmail: editor.email, personName: editor.name, week: week,
+        project: l.project || '', days: parseFloat(l.days) || 0,
+        availability: availability, comment: l.comment || ''
+      }});
     });
-    // availability-only marker when there are no lines
+
     let markerId = null;
-    if (kept.length === 0 && editor.availability) {
-      const existingMarker = cellEntries(editor.email, editor.week).find(e => !e.project && !(e.days > 0));
+    if (kept.length === 0 && availability) {
+      const existingMarker = cellEntries(editor.email, week).find(e => !e.project && !(e.days > 0));
       markerId = existingMarker ? existingMarker.id : genId();
       keptIds.add(markerId);
-      posts.push({
-        formType: 'capacity', action: 'upsert',
-        entry: {
-          id: markerId, personEmail: editor.email, personName: editor.name,
-          week: editor.week, project: '', days: 0,
-          availability: editor.availability, comment: ''
-        }
+      posts.push({ formType: 'capacity', action: 'upsert', entry: {
+        id: markerId, personEmail: editor.email, personName: editor.name, week: week,
+        project: '', days: 0, availability: availability, comment: ''
+      }});
+    }
+
+    (existingIds || []).forEach(id => {
+      if (!keptIds.has(id)) posts.push({ formType: 'capacity', action: 'delete', entry: { id: id } });
+    });
+
+    return { posts: posts, kept: kept, markerId: markerId };
+  }
+
+  function applyLocal(week, kept, availability, markerId) {
+    state.entries = state.entries.filter(e => !(norm(e.personEmail) === norm(editor.email) && e.week === week));
+    kept.forEach(l => state.entries.push({
+      id: l.id, personEmail: editor.email, personName: editor.name, week: week,
+      project: l.project || '', days: parseFloat(l.days) || 0,
+      availability: availability, comment: l.comment || ''
+    }));
+    if (kept.length === 0 && availability && markerId) {
+      state.entries.push({
+        id: markerId, personEmail: editor.email, personName: editor.name, week: week,
+        project: '', days: 0, availability: availability, comment: ''
       });
     }
-    // deletions: previously-existing ids no longer kept
-    editor.existingIds.forEach(id => {
-      if (!keptIds.has(id)) {
-        posts.push({ formType: 'capacity', action: 'delete', entry: { id: id } });
-      }
-    });
+  }
+
+  async function saveEditor() {
+    if (!isMe(editor.email)) { showToast('You can only edit your own week'); return; }
+    const btn = document.getElementById('m-save');
+    btn.disabled = true; btn.textContent = 'Saving…';
+
+    const main = buildPosts(editor.week, editor.lines, editor.availability, editor.existingIds);
+    let allPosts = main.posts.slice();
+
+    // "Also apply to next week": same lines, fresh ids, replacing whatever is there.
+    let nextData = null;
+    if (editor.alsoNextWeek) {
+      const nextWeek = addWeeks(editor.week, 1);
+      const nextLines = main.kept.map(l => ({ id: '', project: l.project, days: l.days, comment: l.comment }));
+      const nextExisting = cellEntries(editor.email, nextWeek).map(e => e.id);
+      const n = buildPosts(nextWeek, nextLines, editor.availability, nextExisting);
+      allPosts = allPosts.concat(n.posts);
+      nextData = { week: nextWeek, kept: n.kept, markerId: n.markerId };
+    }
+
     try {
-      await Promise.all(posts.map(p => fetch(APPS_SCRIPT_URL, {
+      await Promise.all(allPosts.map(p => fetch(APPS_SCRIPT_URL, {
         method: 'POST', mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(Object.assign({ key: dpKey() }, p))
       })));
-      // optimistic local update
-      state.entries = state.entries.filter(e => !(e.personEmail === editor.email && e.week === editor.week));
-      kept.forEach(l => state.entries.push({
-        id: l.id, personEmail: editor.email, personName: editor.name,
-        week: editor.week, project: l.project || '', days: parseFloat(l.days) || 0,
-        availability: editor.availability, comment: l.comment || ''
-      }));
-      if (kept.length === 0 && editor.availability && markerId) {
-        state.entries.push({
-          id: markerId, personEmail: editor.email, personName: editor.name,
-          week: editor.week, project: '', days: 0,
-          availability: editor.availability, comment: ''
-        });
-      }
-      closeEditor();
+
+      applyLocal(editor.week, main.kept, editor.availability, main.markerId);
+      if (nextData) applyLocal(nextData.week, nextData.kept, editor.availability, nextData.markerId);
+
+      closeModal();
       render();
-      showToast('Saved ✓');
-      setTimeout(() => load(true), 3000);  // silent re-sync
+      showToast(editor.alsoNextWeek ? 'Saved for both weeks ✓' : 'Saved ✓');
+      setTimeout(() => load(true), 3000);   // silent re-sync (no-cors posts are blind)
     } catch (err) {
       showToast('Save failed — check your connection');
     } finally {
       btn.disabled = false; btn.textContent = 'Save';
     }
   }
+
   function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2600);
   }
+
   // ---------- data ----------
   async function load(silent) {
     const btn = document.getElementById('refresh-btn');
     btn.disabled = true;
     if (!silent) {
       document.getElementById('content').innerHTML =
-        '<div class="state"><span class="spinner"></span>Loading the capacity plan...</div>';
+        '<div class="state"><span class="spinner"></span>Loading the capacity plan…</div>';
     }
     try {
       const resp = await fetch(APPS_SCRIPT_URL + '?action=capacity' + dpQ(), { method: 'GET' });
@@ -678,7 +1096,8 @@
       if (data && data.error === 'unauthorized') { dpAuthFailed(); return; }
       if (!data.ok) throw new Error(data.error || 'Bad response');
       state.entries = Array.isArray(data.entries) ? data.entries : [];
-      state.people = Array.isArray(data.people) ? data.people : [];
+      state.people = (Array.isArray(data.people) ? data.people : [])
+        .map(p => ({ email: norm(p.email), name: p.name || p.email }));
       state.projects = Array.isArray(data.projects) ? data.projects : [];
       fillMePicker();
       document.getElementById('meta').textContent = 'Loaded ' + new Date().toLocaleTimeString();
@@ -693,21 +1112,29 @@
       btn.disabled = false;
     }
   }
+
   function fillMePicker() {
     const sel = document.getElementById('me');
-    const current = state.me;
     sel.innerHTML = '<option value="">— pick your name —</option>';
     state.people.forEach(p => {
       const o = document.createElement('option');
       o.value = p.email; o.textContent = p.name;
-      if (p.email === current) o.selected = true;
+      if (norm(p.email) === norm(state.me)) o.selected = true;
       sel.appendChild(o);
     });
+    sel.classList.toggle('unset', !state.me);
   }
+
   // ---------- wiring ----------
   document.getElementById('me').addEventListener('change', e => {
     state.me = e.target.value;
-    localStorage.setItem('cap_me', state.me);
+    lsSet(LS_ME, state.me);
+    // never hide yourself
+    if (state.me && state.hidden.has(norm(state.me))) {
+      state.hidden.delete(norm(state.me));
+      lsSet(LS_HIDDEN, JSON.stringify(Array.from(state.hidden)));
+    }
+    document.getElementById('me').classList.toggle('unset', !state.me);
     render();
   });
   document.querySelectorAll('#week-chips button').forEach(btn => {
@@ -731,19 +1158,31 @@
     render();
   });
   document.getElementById('refresh-btn').addEventListener('click', () => load(false));
-  document.getElementById('m-close').addEventListener('click', closeEditor);
-  document.getElementById('m-cancel').addEventListener('click', closeEditor);
-  document.getElementById('m-save').addEventListener('click', saveEditor);
-  document.getElementById('m-addline').addEventListener('click', () => {
-    editor.lines.push({ id: '', project: '', days: '', comment: '' });
-    renderEditor();
+  document.getElementById('people-btn').addEventListener('click', e => { e.stopPropagation(); togglePeoplePanel(); });
+  document.getElementById('people-all').addEventListener('click', () => {
+    state.hidden.clear();
+    lsSet(LS_HIDDEN, JSON.stringify([]));
+    renderPeopleList(); render();
   });
+  document.getElementById('people-none').addEventListener('click', () => {
+    state.people.forEach(p => { if (!isMe(p.email)) state.hidden.add(norm(p.email)); });
+    lsSet(LS_HIDDEN, JSON.stringify(Array.from(state.hidden)));
+    renderPeopleList(); render();
+  });
+  document.addEventListener('mousedown', e => {
+    const panel = document.getElementById('people-panel');
+    if (!panel.classList.contains('open')) return;
+    if (panel.contains(e.target) || e.target.closest('#people-btn')) return;
+    panel.classList.remove('open');
+  });
+  document.getElementById('m-close').addEventListener('click', closeModal);
   document.getElementById('overlay').addEventListener('mousedown', e => {
-    if (e.target === document.getElementById('overlay')) closeEditor();
+    if (e.target === document.getElementById('overlay')) closeModal();
   });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeEditor();
+    if (e.key === 'Escape') { closeModal(); document.getElementById('people-panel').classList.remove('open'); }
   });
+
   load(false);
 </script>
 </body>
