@@ -50,7 +50,6 @@
   .hstat { text-align: center; }
   .hstat .n { font-size: 24px; font-weight: 700; color: var(--amber); }
   .hstat .l { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
-
   .toolbar {
     background: var(--card); border: 1px solid var(--border); border-radius: 12px;
     padding: 14px 16px; margin-bottom: 20px;
@@ -92,14 +91,12 @@
   button.refresh:hover { background: #E5961F; }
   button.refresh:disabled { background: #E5E7EB; color: #9CA3AF; cursor: wait; box-shadow: none; }
   .meta { font-size: 11px; color: var(--muted); font-style: italic; margin-left: auto; }
-
   .section-title {
     background: var(--navy-dark); color: white; padding: 8px 16px;
     font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
     border-radius: 8px; margin: 20px 0 12px 0; display: flex; justify-content: space-between;
   }
   .section-title .count { opacity: 0.7; font-weight: 400; }
-
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
   .pcard {
     background: var(--card); border: 1px solid var(--border); border-radius: 10px;
@@ -133,7 +130,6 @@
     display: inline-flex; align-items: center; justify-content: center;
   }
   .no-team { font-size: 12px; color: var(--muted); font-style: italic; }
-
   .person-card {
     background: var(--card); border: 1px solid var(--border); border-radius: 10px;
     padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
@@ -160,7 +156,6 @@
   .dot.t-adhoc { background: var(--pink); }
   .dot.t-autre { background: #9CA3AF; }
   .person-card li .proj { flex: 1; word-break: break-word; color: var(--text); }
-
   .state { text-align: center; padding: 60px 20px; color: var(--muted); font-style: italic; }
   .state.error { color: var(--red); font-style: normal; font-weight: 500; }
   .spinner {
@@ -172,7 +167,6 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .legend { display: flex; gap: 16px; margin: 14px 2px 0 2px; font-size: 11px; color: var(--muted); flex-wrap: wrap; }
   .legend span { display: inline-flex; align-items: center; gap: 5px; }
-
   @media (max-width: 700px) {
     header.top { flex-direction: column; text-align: center; padding: 20px 16px; }
     .header-stats { justify-content: center; }
@@ -195,7 +189,6 @@
       <div class="hstat"><div class="n" id="stat-people">–</div><div class="l">People</div></div>
     </div>
   </header>
-
   <div class="toolbar">
     <div class="tabs">
       <button id="tab-projects" class="active">By project</button>
@@ -213,9 +206,7 @@
     <button class="refresh" id="refresh-btn">Refresh</button>
     <span class="meta" id="meta"></span>
   </div>
-
   <div id="content"><div class="state"><span class="spinner"></span>Loading staffing from the Sheet…</div></div>
-
   <div class="legend">
     <span><span class="dot"></span> Sprint</span>
     <span><span class="dot t-regie"></span> Régie</span>
@@ -223,13 +214,11 @@
     <span><span class="dot t-autre"></span> Interne/Autre</span>
   </div>
 </div>
-
+<script src="./gate.js"></script>
 <script>
   const APPS_SCRIPT_URL = "https://script.google.com/a/macros/datapilot.fr/s/AKfycbyUhfW211pozOYRKOJBZM9vCcRLxDhmsm3OShM1F_1SV2HWaqpg253ekKdu75xZYiWR/exec";
-
   let STAFFING = [];
   const state = { view: 'projects', search: '', type: '', activeOnly: true };
-
   // ---------- helpers ----------
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({
@@ -283,17 +272,14 @@
       return true;
     });
   }
-
   // ---------- rendering ----------
   function render() {
     const list = visibleProjects();
-
     // header stats (on the filtered set)
     const people = new Set();
     list.forEach(p => membersOf(p).forEach(m => people.add(m.name.toLowerCase())));
     document.getElementById('stat-projects').textContent = list.length;
     document.getElementById('stat-people').textContent = people.size;
-
     const el = document.getElementById('content');
     if (STAFFING.length === 0) return; // loading / error state already shown
     if (list.length === 0) {
@@ -302,7 +288,6 @@
     }
     el.innerHTML = state.view === 'projects' ? renderProjects(list) : renderPeople(list);
   }
-
   function renderProjects(list) {
     const sections = [
       { code: 'sprint', title: 'Sprint projects' },
@@ -337,7 +322,6 @@
     });
     return html;
   }
-
   function renderPeople(list) {
     const map = {};
     list.forEach(p => {
@@ -349,7 +333,6 @@
     });
     const people = Object.keys(map).sort().map(k => map[k]);
     if (people.length === 0) return '<div class="state">Nobody staffed on the filtered projects.</div>';
-
     let html = '<div class="section-title"><span>Team</span><span class="count">' + people.length + '</span></div>';
     html += '<div class="grid">';
     people.forEach(person => {
@@ -371,7 +354,6 @@
     html += '</div>';
     return html;
   }
-
   // ---------- data ----------
   async function load() {
     const btn = document.getElementById('refresh-btn');
@@ -379,8 +361,9 @@
     document.getElementById('content').innerHTML =
       '<div class="state"><span class="spinner"></span>Loading staffing from the Sheet…</div>';
     try {
-      const resp = await fetch(APPS_SCRIPT_URL + '?action=staffing', { method: 'GET' });
+      const resp = await fetch(APPS_SCRIPT_URL + '?action=staffing' + dpQ(), { method: 'GET' });
       const data = await resp.json();
+      if (data && data.error === 'unauthorized') { dpAuthFailed(); return; }
       if (!data.ok || !Array.isArray(data.staffing)) throw new Error(data.error || 'Bad response');
       STAFFING = data.staffing;
       document.getElementById('meta').textContent =
@@ -394,7 +377,6 @@
       btn.disabled = false;
     }
   }
-
   // ---------- wiring ----------
   document.getElementById('tab-projects').addEventListener('click', () => {
     state.view = 'projects';
@@ -425,7 +407,6 @@
     render();
   });
   document.getElementById('refresh-btn').addEventListener('click', load);
-
   load();
 </script>
 </body>
