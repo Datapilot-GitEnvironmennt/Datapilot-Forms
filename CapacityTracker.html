@@ -69,6 +69,12 @@
     padding: 7px 14px; border-radius: 7px; font-family: inherit;
     font-size: 11.5px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
   }
+  .banner select {
+    margin-left: auto; padding: 8px 12px; border: 1px solid var(--navy);
+    border-radius: 8px; font-family: inherit; font-size: 13px;
+    background: white; color: var(--navy); font-weight: 600; min-width: 190px; cursor: pointer;
+  }
+  .banner select:focus { outline: none; box-shadow: 0 0 0 3px rgba(63,166,184,0.2); }
 
   /* ---- TOOLBAR ---- */
   .toolbar {
@@ -84,13 +90,24 @@
     cursor: pointer; transition: all 0.15s;
   }
   .tabs button.active { background: var(--navy); color: white; }
-  .me-picker { display: flex; align-items: center; gap: 8px; }
-  .me-picker label { font-size: 12px; font-weight: 600; color: var(--navy); }
-  .me-picker select {
-    padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
-    font-family: inherit; font-size: 13px; background: white; min-width: 170px;
+  .whoami { display: flex; align-items: center; gap: 8px; }
+  .whoami .you {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--sub-bg); border: 1px solid var(--border);
+    padding: 7px 12px; border-radius: 18px; font-size: 12.5px; color: var(--navy);
   }
-  .me-picker select.unset { border-color: var(--amber); background: #FFFBF2; }
+  .whoami .you b { font-weight: 700; }
+  .whoami .you .avatar {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--amber);
+    color: var(--navy); font-size: 9px; font-weight: 800;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .whoami button {
+    border: 0; background: transparent; color: var(--muted);
+    font-family: inherit; font-size: 11.5px; font-weight: 600;
+    cursor: pointer; text-decoration: underline; padding: 0;
+  }
+  .whoami button:hover { color: var(--teal); }
   .chips { display: flex; gap: 6px; align-items: center; }
   .chips .lbl { font-size: 11px; color: var(--muted); font-weight: 600; }
   .chips button {
@@ -370,16 +387,16 @@
     <img src="./Datapilot_logo.png" alt="Datapilot" class="logo">
     <div class="header-text">
       <h1>Capacity Tracker</h1>
-      <p>Plan ahead: your <b>days per project</b> for the coming weeks. Pick your name, click your cell, fill it in.</p>
+      <p>Plan ahead: your <b>days per project</b> for the coming weeks. Click your cell, fill it in. You edit only your own weeks.</p>
     </div>
     <div class="header-stats">
       <div class="hstat">
-        <div class="n" id="stat-filled">–</div>
+        <div class="n" id="stat-filled">0</div>
         <div class="l">Filled this week</div>
         <div class="bar"><i id="bar-filled" style="width:0%"></i></div>
       </div>
       <div class="hstat">
-        <div class="n" id="stat-days">–</div>
+        <div class="n" id="stat-days">0</div>
         <div class="l">Team load this week</div>
         <div class="bar"><i id="bar-days" style="width:0%"></i></div>
       </div>
@@ -393,10 +410,7 @@
       <button id="tab-grid" class="active">Planning grid</button>
       <button id="tab-avail">Who's available</button>
     </div>
-    <div class="me-picker">
-      <label for="me">I am</label>
-      <select id="me"><option value="">— pick your name —</option></select>
-    </div>
+    <div class="whoami" id="whoami"></div>
     <div class="chips" id="week-chips">
       <span class="lbl">Weeks:</span>
       <button data-n="2" class="on">2</button>
@@ -415,7 +429,7 @@
     <span>🔴 Chargé</span>
     <span>⚪ Congé</span>
     <span style="color:var(--red)">⚠ over <span id="legend-max">5</span> days planned</span>
-    <span>🔒 = someone else's week (read-only)</span>
+    <span>🔒 someone else's week (read-only)</span>
   </div>
 
   <div id="content"><div class="state"><span class="spinner"></span>Loading the capacity plan…</div></div>
@@ -429,7 +443,7 @@
     <button id="people-none">None</button>
   </div>
   <div class="plist" id="people-list"></div>
-  <div class="pf">Hidden people are excluded from the grid and from the stats. Saved in this browser only — to hide someone for the whole team, remove them from the TeamDirectory sheet.</div>
+  <div class="pf">Hidden people are excluded from the grid and from the stats. Saved in this browser only. To hide someone for the whole team, remove them from the TeamDirectory sheet.</div>
 </div>
 
 <!-- EDITOR / READ-ONLY MODAL -->
@@ -437,8 +451,8 @@
   <div class="modal">
     <div class="mhead">
       <div class="t">
-        <h2 id="m-title">–</h2>
-        <p id="m-sub">–</p>
+        <h2 id="m-title"></h2>
+        <p id="m-sub"></p>
       </div>
       <button id="m-close" title="Close">✕</button>
     </div>
@@ -541,6 +555,27 @@
     return state.people.filter(p => !state.hidden.has(norm(p.email)));
   }
   function isMe(email) { return !!state.me && norm(email) === norm(state.me); }
+  // The stored identity only counts if that person still exists in the team list.
+  function meIsKnown() {
+    return !!state.me && state.people.some(p => norm(p.email) === norm(state.me));
+  }
+  function meName() {
+    const p = state.people.find(x => norm(x.email) === norm(state.me));
+    return p ? p.name : '';
+  }
+  function setMe(email) {
+    state.me = email || '';
+    lsSet(LS_ME, state.me);
+    if (state.me && state.hidden.has(norm(state.me))) {   // never hide yourself
+      state.hidden.delete(norm(state.me));
+      lsSet(LS_HIDDEN, JSON.stringify(Array.from(state.hidden)));
+    }
+    render();
+  }
+  function initials(name) {
+    const parts = String(name).trim().split(/\s+/);
+    return ((parts[0] || '')[0] || '').toUpperCase() + ((parts[1] || '')[0] || '').toUpperCase();
+  }
   function cellEntries(email, week) {
     const e = norm(email);
     return state.entries.filter(x => norm(x.personEmail) === e && x.week === week);
@@ -573,6 +608,7 @@
   // ---------- rendering ----------
   function render() {
     updateStats();
+    renderWhoami();
     renderBanners();
     renderPeopleCount();
     const el = document.getElementById('content');
@@ -607,14 +643,33 @@
     document.getElementById('legend-max').textContent = PERSON_WEEK_CAPACITY;
   }
 
+  function renderWhoami() {
+    const el = document.getElementById('whoami');
+    if (!meIsKnown()) { el.innerHTML = ''; return; }
+    el.innerHTML =
+      '<span class="you"><span class="avatar">' + esc(initials(meName())) + '</span>' +
+      'You: <b>' + esc(meName()) + '</b></span>' +
+      '<button type="button" id="who-change">change</button>';
+    document.getElementById('who-change').addEventListener('click', () => setMe(''));
+  }
+
   function renderBanners() {
     const box = document.getElementById('banners');
     box.innerHTML = '';
-    if (!state.me) {
-      box.innerHTML = '<div class="banner pick">👋 Pick your name in <b>“I am”</b> to plan your weeks. ' +
-        'You can only edit your own cells.</div>';
+
+    if (!meIsKnown()) {
+      let opts = '<option value="">Pick your name</option>';
+      state.people.forEach(p => {
+        opts += '<option value="' + esc(p.email) + '">' + esc(p.name) + '</option>';
+      });
+      box.innerHTML =
+        '<div class="banner pick"><span>👋 Who are you? Everyone plans their own weeks, ' +
+        'so pick your name to start.</span>' +
+        '<select id="who-select">' + opts + '</select></div>';
+      document.getElementById('who-select').addEventListener('change', e => setMe(e.target.value));
       return;
     }
+
     const wk = currentMondayIso();
     if (!hasFilled(state.me, wk)) {
       box.innerHTML = '<div class="banner todo">📅 You haven\'t planned <b>this week</b> yet.' +
@@ -660,7 +715,7 @@
 
         let inner;
         if (lines.length === 0 && !avail) {
-          inner = mine ? '<span class="plus">+</span>' : '<span class="empty-locked">—</span>';
+          inner = mine ? '<span class="plus">+</span>' : '<span class="empty-locked"></span>';
         } else if (lines.length === 0) {
           inner = '<div class="tot">' + emojiOf(avail) + '</div><div class="sub">' + esc(avail) + '</div>';
         } else {
@@ -669,7 +724,7 @@
         }
         html += '<td class="' + cls + '">' +
           '<button class="cellbtn' + (mine ? '' : ' locked') + '" data-email="' + esc(p.email) + '" data-week="' + w + '" ' +
-          'title="' + (mine ? 'Click to edit your week' : esc(p.name) + '’s week — read-only') + '">' +
+          'title="' + (mine ? 'Click to edit your week' : esc(p.name) + ' (read-only)') + '">' +
           inner + '</button></td>';
       });
       html += '<td class="total-cell">' + fmt(rowTotal) + ' d</td>';
@@ -779,8 +834,8 @@
     const lines = realLines(person.email, week);
     const avail = cellAvail(person.email, week);
     const total = cellTotal(person.email, week);
-    let html = '<div class="ro-note">🔒 This is <b>' + esc(person.name) + '</b>’s week — everyone plans their own. ' +
-      'Switch the <b>“I am”</b> picker to your own name to edit yours.</div>';
+    let html = '<div class="ro-note">🔒 This is <b>' + esc(person.name) + '</b>\'s week. Everyone plans their own. ' +
+      'Use <b>change</b> next to your name in the toolbar if this should be you.</div>';
     html += '<p class="mlabel">Availability</p>';
     html += '<div style="font-size:14px;margin-bottom:16px">' +
       (avail ? emojiOf(avail) + ' ' + esc(avail) : '<span class="ro-empty">Not set</span>') + '</div>';
@@ -790,7 +845,7 @@
     } else {
       lines.forEach(l => {
         html += '<div class="ro-line">' +
-          '<span class="pj">' + esc(l.project || '—') + '</span>' +
+          '<span class="pj">' + esc(l.project || OTHER_PROJECT) + '</span>' +
           '<span class="cm">' + (l.comment ? esc(l.comment) : '') + '</span>' +
           '<span class="dy">' + fmt(l.days) + ' d</span></div>';
       });
@@ -906,7 +961,7 @@
 
       const sel = document.createElement('select');
       const opt0 = document.createElement('option');
-      opt0.value = ''; opt0.textContent = '— pick a project —';
+      opt0.value = ''; opt0.textContent = 'Pick a project';
       sel.appendChild(opt0);
       state.projects.forEach(pn => {
         const o = document.createElement('option');
@@ -983,7 +1038,7 @@
     box.classList.toggle('over', t > PERSON_WEEK_CAPACITY + 0.001);
     box.classList.toggle('full', Math.abs(t - PERSON_WEEK_CAPACITY) < 0.001);
     warn.textContent = t > PERSON_WEEK_CAPACITY + 0.001
-      ? '⚠ More than ' + PERSON_WEEK_CAPACITY + ' days planned — double-check, or save anyway if it\'s real.'
+      ? '⚠ More than ' + PERSON_WEEK_CAPACITY + ' days planned. Double-check, or save anyway if it\'s real.'
       : '';
   }
 
@@ -1069,7 +1124,7 @@
       showToast(editor.alsoNextWeek ? 'Saved for both weeks ✓' : 'Saved ✓');
       setTimeout(() => load(true), 3000);   // silent re-sync (no-cors posts are blind)
     } catch (err) {
-      showToast('Save failed — check your connection');
+      showToast('Save failed, check your connection');
     } finally {
       btn.disabled = false; btn.textContent = 'Save';
     }
@@ -1099,7 +1154,6 @@
       state.people = (Array.isArray(data.people) ? data.people : [])
         .map(p => ({ email: norm(p.email), name: p.name || p.email }));
       state.projects = Array.isArray(data.projects) ? data.projects : [];
-      fillMePicker();
       document.getElementById('meta').textContent = 'Loaded ' + new Date().toLocaleTimeString();
       render();
     } catch (err) {
@@ -1113,30 +1167,7 @@
     }
   }
 
-  function fillMePicker() {
-    const sel = document.getElementById('me');
-    sel.innerHTML = '<option value="">— pick your name —</option>';
-    state.people.forEach(p => {
-      const o = document.createElement('option');
-      o.value = p.email; o.textContent = p.name;
-      if (norm(p.email) === norm(state.me)) o.selected = true;
-      sel.appendChild(o);
-    });
-    sel.classList.toggle('unset', !state.me);
-  }
-
   // ---------- wiring ----------
-  document.getElementById('me').addEventListener('change', e => {
-    state.me = e.target.value;
-    lsSet(LS_ME, state.me);
-    // never hide yourself
-    if (state.me && state.hidden.has(norm(state.me))) {
-      state.hidden.delete(norm(state.me));
-      lsSet(LS_HIDDEN, JSON.stringify(Array.from(state.hidden)));
-    }
-    document.getElementById('me').classList.toggle('unset', !state.me);
-    render();
-  });
   document.querySelectorAll('#week-chips button').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#week-chips button').forEach(b => b.classList.remove('on'));
