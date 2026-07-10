@@ -101,9 +101,8 @@
   <a class="back" href="./index.html"> All forms</a>
   <a class="btn" id="open-monday" href="#" target="_blank" rel="noopener">Open in Monday</a>
 </div>
-
 <div class="board-area" id="board-area"></div>
-
+<script src="./gate.js"></script>
 <script>
   // ==================================================================
   // CONFIG — two URLs to fill in:
@@ -121,9 +120,7 @@
   // ==================================================================
   const MONDAY_EMBED_URL = "https://view.monday.com/embed/1616248424-7480a6b661fef6a03f184ce8d95eb1d2?r=euc1";  // <- paste the view.monday.com/embed/... URL here
   const MONDAY_BOARD_URL = "https://datapilot-force.monday.com/boards/1616248424/";
-
   document.getElementById('open-monday').href = MONDAY_BOARD_URL;
-
   const area = document.getElementById('board-area');
   if (MONDAY_EMBED_URL && MONDAY_EMBED_URL.indexOf('view.monday.com') !== -1) {
     const f = document.createElement('iframe');
