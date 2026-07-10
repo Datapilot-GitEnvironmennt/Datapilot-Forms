@@ -28,7 +28,7 @@
   };
   window.dpAuthFailed = function () {
     try { localStorage.removeItem(STORE); } catch (e) {}
-    whenBodyReady(function () { showGate('Session expired or password changed - please enter it again.'); });
+    whenBodyReady(function () { showGate(''); });
   };
 
   function whenBodyReady(fn) {
