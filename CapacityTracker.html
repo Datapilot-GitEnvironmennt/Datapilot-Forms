@@ -267,10 +267,15 @@
   .wtip { position:absolute; bottom:calc(100% + 4px); left:50%; transform:translateX(-50%); background:var(--navy); color:white; font-size:11px; padding:6px 9px; border-radius:7px; white-space:nowrap; display:none; z-index:20; box-shadow:0 6px 18px rgba(0,0,0,0.25); }
   .wcol:hover .wtip { display:block; }
   /* horizontal bars */
-  .hbars { display:flex; flex-direction:column; gap:9px; margin-top:8px; }
-  .hbar { display:grid; grid-template-columns:140px 1fr 60px; gap:10px; align-items:center; }
-  .hbar .hlab { font-size:12.5px; color:var(--navy); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .hbar .htrack { background:var(--sub-bg); border-radius:6px; height:16px; overflow:hidden; }
+  .hbars { display:flex; flex-direction:column; gap:13px; margin-top:8px; }
+  .hbar { display:block; min-width:0; }
+  .hbar .hlab {
+    display:block; font-size:12.5px; color:var(--navy); font-weight:500;
+    white-space:normal; overflow-wrap:break-word; word-break:break-word;
+    line-height:1.35; margin-bottom:4px;
+  }
+  .hbar .hrow { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; min-width:0; }
+  .hbar .htrack { background:var(--sub-bg); border-radius:6px; height:16px; overflow:hidden; min-width:0; }
   .hbar .hfill { height:100%; background:var(--teal); border-radius:6px; }
   .hbar .hfill.over { background:var(--red); }
   .hbar .hfill.under { background:#9CC7D1; }
@@ -283,7 +288,15 @@
   .pva-d.under { color:var(--muted); }
   .pva-tag { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--muted); background:var(--sub-bg); border:1px solid var(--border); padding:1px 6px; border-radius:7px; margin-left:6px; }
   .stats-note { background:var(--sub-bg); border-left:4px solid var(--amber); border-radius:8px; padding:12px 14px; font-size:12px; color:var(--navy); line-height:1.55; }
-  @media (max-width:760px){ .hbar { grid-template-columns:92px 1fr 52px; } .wlab { font-size:9px; } }
+  @media (max-width:760px){ .hbar .hval { font-size:10.5px; } .wlab { font-size:9px; } }
+  /* legend for the planned-vs-actual bars */
+  .pva-legend { display:flex; gap:16px; flex-wrap:wrap; align-items:center; margin:2px 0 12px 0; font-size:11.5px; color:var(--muted); }
+  .pva-legend span { display:inline-flex; align-items:center; gap:6px; }
+  .pva-legend i { display:inline-block; border-radius:4px; }
+  .pva-legend .sw-plan { width:22px; height:12px; background:#CDE7EC; }
+  .pva-legend .sw-act { width:22px; height:7px; background:var(--navy); border-radius:4px; }
+  .pva-legend .sw-dpos { color:var(--red); font-style:normal; font-weight:700; }
+  .pva-legend .sw-dneg { color:var(--muted); font-style:normal; font-weight:700; }
 
   /* ---- MODAL ---- */
   .overlay {
@@ -820,17 +833,6 @@
     return '<div class="wchart"><div class="wplot">' + cols + capLine + avgLine + '</div><div class="wlabels">' + labs + '</div></div>';
   }
 
-  function hbars(rows) {
-    if (!rows.length) return '<div class="avail-empty">Nothing to show.</div>';
-    let h = '<div class="hbars">';
-    rows.forEach(r => {
-      const pct = r.max > 0 ? Math.min(100, (r.value / r.max) * 100) : 0;
-      h += '<div class="hbar"><span class="hlab" title="' + esc(r.label) + '">' + esc(r.label) + '</span>' +
-        '<span class="htrack"><span class="hfill ' + (r.cls || '') + '" style="width:' + pct + '%"></span></span>' +
-        '<span class="hval">' + r.right + '</span></div>';
-    });
-    return h + '</div>';
-  }
 
   // Best-effort project code so capacity names ("[Sprint] ST2 - ... - Forward")
   // and timesheet names ("[Sprint] Forward (ST2)") join on the same key.
@@ -873,9 +875,21 @@
   }
 
   // Planned-vs-actual bars: light bar = planned extent, dark inner bar = actual.
+  function pvaLegend(hasActuals) {
+    let h = '<div class="pva-legend">';
+    h += '<span><i class="sw-plan"></i> Planned (capacity)</span>';
+    if (hasActuals) {
+      h += '<span><i class="sw-act"></i> Actual (timesheet)</span>';
+      h += '<span><i class="sw-dpos">(+)</i> over plan</span>';
+      h += '<span><i class="sw-dneg">(-)</i> under plan</span>';
+    }
+    h += '</div>';
+    return h;
+  }
+
   function pvaBars(rows, hasActuals) {
     const scale = Math.max.apply(null, rows.map(r => Math.max(r.planned, r.actual)).concat([1]));
-    let h = '<div class="hbars">';
+    let h = pvaLegend(hasActuals) + '<div class="hbars">';
     rows.forEach(r => {
       const pPct = Math.min(100, (r.planned / scale) * 100);
       const aPct = Math.min(100, (r.actual / scale) * 100);
@@ -891,12 +905,15 @@
       } else {
         right = fmt(r.planned) + ' d';
       }
-      h += '<div class="hbar"><span class="hlab" title="' + esc(r.name) + '">' + esc(r.name) + tag + '</span>' +
-        '<span class="htrack pva">' +
-          '<span class="pva-plan" style="width:' + pPct + '%"></span>' +
-          (hasActuals ? '<span class="pva-act" style="width:' + aPct + '%"></span>' : '') +
-        '</span>' +
-        '<span class="hval">' + right + '</span></div>';
+      h += '<div class="hbar">' +
+        '<span class="hlab">' + esc(r.name) + tag + '</span>' +
+        '<span class="hrow">' +
+          '<span class="htrack pva">' +
+            '<span class="pva-plan" style="width:' + pPct + '%"></span>' +
+            (hasActuals ? '<span class="pva-act" style="width:' + aPct + '%"></span>' : '') +
+          '</span>' +
+          '<span class="hval">' + right + '</span>' +
+        '</span></div>';
     });
     return h + '</div>';
   }
@@ -929,9 +946,8 @@
 
     html += '<div class="chart-card"><h3>Planned vs actual, by project</h3>';
     html += hasActuals
-      ? '<p class="csub">Planned days (capacity) vs actual days logged (timesheet), matched by project code. ' +
-        'Light bar = planned, dark bar = actual. \u0394 is actual minus planned. ' +
-        '"No plan" = logged but not in the plan; "no actual" = planned but nothing logged yet.</p>'
+      ? '<p class="csub">Matched by project code. Value column: planned / actual (difference). ' +
+        '"No plan" = logged but not planned; "no actual" = planned but nothing logged yet.</p>'
       : '<p class="csub">Planned days (capacity) per project. Actual (timesheet) shows here once the ' +
         'consolidated sheet is connected.</p>';
     html += pvaBars(rows, hasActuals);
