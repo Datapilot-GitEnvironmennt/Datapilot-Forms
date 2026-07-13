@@ -193,9 +193,45 @@
     background: var(--sub-bg); border: 1px solid var(--border);
     padding: 7px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 500;
     color: var(--navy); margin-bottom: 6px;
+    position: relative; cursor: default;
   }
+  .avail-col .pill:hover { border-color: var(--teal); background: #F0F7FA; }
   .avail-col .pill .d { font-size: 11px; color: var(--muted); }
   .avail-empty { font-size: 12px; color: var(--muted); font-style: italic; }
+
+  /* hover detail popover for a person in the availability view */
+  .pill-pop {
+    position: absolute; left: 0; top: calc(100% + 6px); z-index: 60;
+    width: 262px; max-width: 82vw;
+    background: white; border: 1px solid var(--navy); border-radius: 10px;
+    box-shadow: 0 12px 30px rgba(15, 42, 61, 0.22);
+    padding: 12px 14px; text-align: left; font-weight: 400; cursor: default;
+    display: none;
+  }
+  .avail-col .pill:hover .pill-pop { display: block; }
+  .pill-pop .pop-head {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+    font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 3px;
+  }
+  .pill-pop .pop-av { font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .pill-pop .pop-sub {
+    font-size: 11px; color: var(--muted); margin-bottom: 8px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .pill-pop .pop-empty { font-size: 12px; color: var(--muted); font-style: italic; }
+  .pill-pop .pop-line {
+    display: flex; justify-content: space-between; gap: 10px;
+    font-size: 12.5px; color: var(--navy); padding: 4px 0;
+  }
+  .pill-pop .pop-line + .pop-cmt { margin-top: -2px; }
+  .pill-pop .pop-line .pl-p { word-break: break-word; }
+  .pill-pop .pop-line .pl-d { font-weight: 700; white-space: nowrap; }
+  .pill-pop .pop-cmt { font-size: 11px; color: var(--muted); font-style: italic; padding: 0 0 4px 0; line-height: 1.4; }
+  .pill-pop .pop-total {
+    display: flex; justify-content: space-between; gap: 10px;
+    font-size: 12px; font-weight: 700; color: var(--navy);
+    margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--sub-bg);
+  }
 
   /* ---- MODAL ---- */
   .overlay {
@@ -324,7 +360,7 @@
     <img src="./Datapilot_logo.png" alt="Datapilot" class="logo">
     <div class="header-text">
       <h1>Capacity Tracker</h1>
-      <p>Plan ahead: <b>days per project</b> for the coming weeks. Click any cell to fill it in.</p>
+      <p>Plan ahead: <b>days per project</b> for the coming weeks. Click any cell to fill it in. Everyone can edit.</p>
     </div>
     <div class="header-stats">
       <div class="hstat">
@@ -603,6 +639,36 @@
     return html;
   }
 
+  // Rich detail shown when hovering a person in the availability view:
+  // their availability, planned vs free days, and the project breakdown.
+  function availDetailHtml(name, email, week) {
+    const lines = realLines(email, week).slice().sort((a, b) => (b.days || 0) - (a.days || 0));
+    const total = cellTotal(email, week);
+    const avail = cellAvail(email, week) || suggestAvail(total);
+    const free = Math.max(0, PERSON_WEEK_CAPACITY - total);
+    let h = '<div class="pop-head"><span>' + esc(name) + '</span>' +
+            '<span class="pop-av">' + emojiOf(avail) + ' ' + esc(avail) + '</span></div>';
+    h += '<div class="pop-sub">Week of ' + fmtWeek(week) + '</div>';
+    if (lines.length === 0) {
+      h += '<div class="pop-empty">' +
+           (avail === 'Congé' ? 'On leave this week.' : 'No projects planned yet.') + '</div>';
+      return h;
+    }
+    lines.forEach(l => {
+      h += '<div class="pop-line"><span class="pl-p">' + esc(l.project || OTHER_PROJECT) + '</span>' +
+           '<span class="pl-d">' + fmt(l.days) + ' d</span></div>';
+      if (l.comment) h += '<div class="pop-cmt">' + esc(l.comment) + '</div>';
+    });
+    h += '<div class="pop-total"><span>Total</span><span>' + fmt(total) + ' d · ' + fmt(free) + ' free</span></div>';
+    return h;
+  }
+
+  function availPill(name, email, week, rightText) {
+    return '<div class="pill"><span class="pill-name">' + esc(name) + '</span>' +
+      (rightText ? '<span class="d">' + rightText + '</span>' : '') +
+      '<div class="pill-pop">' + availDetailHtml(name, email, week) + '</div></div>';
+  }
+
   function renderAvail() {
     const wks = weeks();
     if (!state.availWeek || wks.indexOf(state.availWeek) === -1) state.availWeek = wks[0];
@@ -628,14 +694,13 @@
       if (list.length === 0) html += '<div class="avail-empty">Nobody</div>';
       list.forEach(x => {
         const free = Math.max(0, PERSON_WEEK_CAPACITY - x.total);
-        html += '<div class="pill"><span>' + esc(x.p.name) + '</span>' +
-          '<span class="d">' + fmt(x.total) + ' d · ' + fmt(free) + ' free</span></div>';
+        html += availPill(x.p.name, x.p.email, state.availWeek, fmt(x.total) + ' d · ' + fmt(free) + ' free');
       });
       html += '</div>';
     });
     html += '<div class="avail-col"><h3><span>❔ Not filled in</span><span class="cnt">' + notFilled.length + '</span></h3>';
     if (notFilled.length === 0) html += '<div class="avail-empty">Everyone filled in 🎉</div>';
-    notFilled.forEach(p => { html += '<div class="pill"><span>' + esc(p.name) + '</span></div>'; });
+    notFilled.forEach(p => { html += availPill(p.name, p.email, state.availWeek, ''); });
     html += '</div></div>';
     return html;
   }
