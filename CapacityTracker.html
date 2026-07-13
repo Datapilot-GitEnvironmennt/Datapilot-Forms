@@ -233,6 +233,51 @@
     margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--sub-bg);
   }
 
+  /* ---- STATS / PROJECTION VIEW ---- */
+  .stats-head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .stats-head .lbl { font-size:11px; color:var(--muted); font-weight:600; }
+  .stat-h-chip { border:1px solid var(--border); background:white; padding:6px 12px; border-radius:18px; font-family:inherit; font-size:12px; font-weight:600; color:var(--navy); cursor:pointer; transition:all .15s; }
+  .stat-h-chip:hover { border-color:var(--teal); }
+  .stat-h-chip.on { background:var(--navy); color:white; border-color:var(--navy); }
+  .stat-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:12px; margin-bottom:16px; }
+  .scard { background:white; border:1px solid var(--border); border-radius:12px; padding:14px 16px; box-shadow:0 1px 3px rgba(0,0,0,0.04); border-left:4px solid var(--teal); }
+  .scard.warn { border-left-color:var(--red); }
+  .scard.good { border-left-color:var(--green); }
+  .scard .v { font-size:23px; font-weight:700; color:var(--navy); line-height:1.15; }
+  .scard .l { font-size:10px; text-transform:uppercase; letter-spacing:0.7px; color:var(--muted); font-weight:600; margin-top:3px; }
+  .scard .s { font-size:11px; color:var(--muted); margin-top:3px; line-height:1.4; }
+  .chart-card { background:white; border:1px solid var(--border); border-radius:12px; padding:16px 18px; box-shadow:0 1px 3px rgba(0,0,0,0.04); margin-bottom:14px; }
+  .chart-card h3 { margin:0 0 4px 0; font-size:14px; color:var(--navy); font-weight:600; }
+  .chart-card .csub { margin:0 0 6px 0; font-size:11.5px; color:var(--muted); line-height:1.45; }
+  /* weekly projection columns */
+  .wplot { position:relative; display:flex; align-items:flex-end; gap:10px; height:170px; margin-top:22px; }
+  .wcol { flex:1; height:100%; display:flex; align-items:flex-end; position:relative; min-width:22px; }
+  .wcol-bar { width:100%; background:var(--teal); border-radius:6px 6px 0 0; min-height:2px; position:relative; transition:height .3s; }
+  .wcol-bar.over { background:var(--red); }
+  .wcol-bar.full { background:var(--green); }
+  .wcol-val { position:absolute; top:-15px; left:0; right:0; text-align:center; font-size:10px; font-weight:700; color:var(--navy); }
+  .wcol:hover .wcol-bar { filter:brightness(1.08); }
+  .wcap { position:absolute; left:0; right:0; border-top:2px dashed var(--navy); z-index:3; }
+  .wcap .tag { position:absolute; right:0; top:-8px; font-size:9px; font-weight:700; color:var(--navy); background:white; padding:0 4px; }
+  .wavg { position:absolute; left:0; right:0; border-top:1px dotted var(--amber); z-index:2; }
+  .wavg .tag { position:absolute; left:0; top:-8px; font-size:9px; font-weight:700; color:#B9791A; background:white; padding:0 4px; }
+  .wlabels { display:flex; gap:10px; margin-top:7px; }
+  .wlab { flex:1; text-align:center; min-width:22px; font-size:10px; color:var(--muted); white-space:nowrap; }
+  .wlab b { display:block; color:var(--navy); font-size:9px; font-weight:700; }
+  .wtip { position:absolute; bottom:calc(100% + 4px); left:50%; transform:translateX(-50%); background:var(--navy); color:white; font-size:11px; padding:6px 9px; border-radius:7px; white-space:nowrap; display:none; z-index:20; box-shadow:0 6px 18px rgba(0,0,0,0.25); }
+  .wcol:hover .wtip { display:block; }
+  /* horizontal bars */
+  .hbars { display:flex; flex-direction:column; gap:9px; margin-top:8px; }
+  .hbar { display:grid; grid-template-columns:140px 1fr 60px; gap:10px; align-items:center; }
+  .hbar .hlab { font-size:12.5px; color:var(--navy); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hbar .htrack { background:var(--sub-bg); border-radius:6px; height:16px; overflow:hidden; }
+  .hbar .hfill { height:100%; background:var(--teal); border-radius:6px; }
+  .hbar .hfill.over { background:var(--red); }
+  .hbar .hfill.under { background:#9CC7D1; }
+  .hbar .hval { font-size:11.5px; font-weight:700; color:var(--navy); text-align:right; white-space:nowrap; }
+  .stats-note { background:var(--sub-bg); border-left:4px solid var(--amber); border-radius:8px; padding:12px 14px; font-size:12px; color:var(--navy); line-height:1.55; }
+  @media (max-width:760px){ .hbar { grid-template-columns:92px 1fr 52px; } .wlab { font-size:9px; } }
+
   /* ---- MODAL ---- */
   .overlay {
     position: fixed; inset: 0; background: rgba(8, 24, 38, 0.55);
@@ -380,6 +425,7 @@
     <div class="tabs">
       <button id="tab-grid" class="active">Planning grid</button>
       <button id="tab-avail">Who's available</button>
+      <button id="tab-stats">Stats &amp; projection</button>
     </div>
     <div class="chips" id="week-chips">
       <span class="lbl">Weeks:</span>
@@ -455,7 +501,7 @@
   const state = {
     entries: [], people: [], projects: [],
     hidden: new Set(lsGetJson(LS_HIDDEN, [])),
-    weekCount: 2, view: 'grid', availWeek: ''
+    weekCount: 2, view: 'grid', availWeek: '', statHorizon: 8
   };
 
   const editor = {
@@ -563,7 +609,9 @@
       el.innerHTML = '<div class="state">Everybody is hidden. Open the <b>People</b> filter to show someone.</div>';
       return;
     }
-    el.innerHTML = state.view === 'grid' ? renderGrid() : renderAvail();
+    el.innerHTML = state.view === 'grid' ? renderGrid()
+                 : state.view === 'avail' ? renderAvail()
+                 : renderStats();
     wireContent();
   }
 
@@ -705,12 +753,166 @@
     return html;
   }
 
+  // ---------- STATS / PROJECTION (from capacity data) ----------
+  function analyticsWeekList() {
+    const cur = currentMondayIso();
+    if (state.statHorizon === 'all') {
+      const vis = new Set(visiblePeople().map(p => norm(p.email)));
+      let max = cur;
+      state.entries.forEach(e => {
+        if (vis.has(norm(e.personEmail)) && e.week >= cur && e.week > max) max = e.week;
+      });
+      const out = []; let w = cur, g = 0;
+      while (g < 26) { out.push(w); if (w >= max) break; w = addWeeks(w, 1); g++; }
+      return out;
+    }
+    const n = state.statHorizon;
+    const out = []; let w = cur;
+    for (let i = 0; i < n; i++) { out.push(w); w = addWeeks(w, 1); }
+    return out;
+  }
+
+  function weekBadgeShort(i) { return i === 0 ? 'now' : '+' + i; }
+
+  function scard(v, l, s, cls) {
+    return '<div class="scard ' + (cls || '') + '"><div class="v">' + v + '</div>' +
+      '<div class="l">' + esc(l) + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>';
+  }
+
+  function statsHead(wks) {
+    const opts = [{ k: 4, t: '4 wks' }, { k: 8, t: '8 wks' }, { k: 12, t: '12 wks' }, { k: 'all', t: 'All planned' }];
+    let h = '<div class="stats-head"><span class="lbl">Horizon:</span>';
+    opts.forEach(o => {
+      h += '<button class="stat-h-chip' + (state.statHorizon === o.k ? ' on' : '') + '" data-h="' + o.k + '">' + o.t + '</button>';
+    });
+    h += '<span class="meta" style="margin-left:auto">' + fmtWeek(wks[0]) + ' to ' + fmtWeek(wks[wks.length - 1]) +
+         ' (' + wks.length + ' week' + (wks.length > 1 ? 's' : '') + ')</span></div>';
+    return h;
+  }
+
+  function weeklyChart(wks, loads, cap, avg) {
+    const maxVal = Math.max(cap, Math.max.apply(null, loads), 1);
+    const capPct = Math.min(100, (cap / maxVal) * 100);
+    const avgPct = Math.min(100, (avg / maxVal) * 100);
+    let cols = '', labs = '';
+    wks.forEach((w, i) => {
+      const v = loads[i];
+      const hPct = Math.max(0, (v / maxVal) * 100);
+      const cls = v > cap + 0.001 ? 'over' : (Math.abs(v - cap) < 0.001 && v > 0 ? 'full' : '');
+      const util = cap ? Math.round((v / cap) * 100) : 0;
+      cols += '<div class="wcol">' +
+        '<div class="wtip">' + fmtWeek(w) + ': ' + fmt(v) + ' / ' + fmt(cap) + ' d (' + util + '%)</div>' +
+        '<div class="wcol-bar ' + cls + '" style="height:' + hPct + '%"><span class="wcol-val">' + fmt(v) + '</span></div>' +
+        '</div>';
+      labs += '<div class="wlab"><b>' + weekBadgeShort(i) + '</b>' + fmtWeek(w) + '</div>';
+    });
+    const capLine = '<div class="wcap" style="bottom:' + capPct + '%"><span class="tag">cap ' + fmt(cap) + '</span></div>';
+    const avgLine = avg > 0 ? '<div class="wavg" style="bottom:' + avgPct + '%"><span class="tag">avg ' + fmt(avg) + '</span></div>' : '';
+    return '<div class="wchart"><div class="wplot">' + cols + capLine + avgLine + '</div><div class="wlabels">' + labs + '</div></div>';
+  }
+
+  function hbars(rows) {
+    if (!rows.length) return '<div class="avail-empty">Nothing to show.</div>';
+    let h = '<div class="hbars">';
+    rows.forEach(r => {
+      const pct = r.max > 0 ? Math.min(100, (r.value / r.max) * 100) : 0;
+      h += '<div class="hbar"><span class="hlab" title="' + esc(r.label) + '">' + esc(r.label) + '</span>' +
+        '<span class="htrack"><span class="hfill ' + (r.cls || '') + '" style="width:' + pct + '%"></span></span>' +
+        '<span class="hval">' + r.right + '</span></div>';
+    });
+    return h + '</div>';
+  }
+
+  function renderStats() {
+    const wks = analyticsWeekList();
+    const vis = visiblePeople();
+    const capWeek = weekCapacity();
+
+    const loads = wks.map(w => weekLoad(w));
+    const totalPlanned = loads.reduce((a, b) => a + b, 0);
+    const totalCap = capWeek * wks.length;
+    const avgLoad = wks.length ? totalPlanned / wks.length : 0;
+    const avgUtil = totalCap ? Math.round((totalPlanned / totalCap) * 100) : 0;
+
+    let overPW = 0;
+    wks.forEach(w => vis.forEach(p => { if (cellTotal(p.email, w) > PERSON_WEEK_CAPACITY + 0.001) overPW++; }));
+    const cur = currentMondayIso();
+    const filledNow = vis.filter(p => hasFilled(p.email, cur)).length;
+
+    if (vis.length === 0 || totalPlanned === 0) {
+      return statsHead(wks) +
+        '<div class="stats-note">No planned days to chart yet for the current selection. ' +
+        'Fill some cells in the planning grid (or widen the People filter) and they will appear here.</div>';
+    }
+
+    const perPersonMax = PERSON_WEEK_CAPACITY * wks.length;
+    const persons = vis.map(p => {
+      let d = 0; wks.forEach(w => { d += cellTotal(p.email, w); });
+      return { name: p.name, days: d };
+    }).sort((a, b) => b.days - a.days);
+
+    const projMap = {};
+    const visSet = new Set(vis.map(p => norm(p.email)));
+    state.entries.forEach(e => {
+      if (!visSet.has(norm(e.personEmail))) return;
+      if (wks.indexOf(e.week) === -1) return;
+      if (!(e.days > 0)) return;
+      const key = e.project || OTHER_PROJECT;
+      projMap[key] = (projMap[key] || 0) + e.days;
+    });
+    const projects = Object.keys(projMap).map(k => ({ name: k, days: projMap[k] })).sort((a, b) => b.days - a.days);
+    const projMaxVal = projects.length ? projects[0].days : 1;
+
+    let html = statsHead(wks);
+
+    html += '<div class="stat-cards">';
+    html += scard(fmt(totalPlanned) + ' d', 'Planned (horizon)',
+                  wks.length + ' week' + (wks.length > 1 ? 's' : '') + ', ' + vis.length + ' people', '');
+    html += scard(avgUtil + '%', 'Avg utilization', fmt(avgLoad) + ' of ' + fmt(capWeek) + ' d / week',
+                  avgUtil > 100 ? 'warn' : (avgUtil >= 70 ? 'good' : ''));
+    html += scard(String(overPW), 'Overbooked person-weeks',
+                  overPW ? 'someone over ' + PERSON_WEEK_CAPACITY + ' d' : 'none over ' + PERSON_WEEK_CAPACITY + ' d',
+                  overPW ? 'warn' : 'good');
+    html += scard(filledNow + ' / ' + vis.length, 'Planned this week', 'have filled the current week', '');
+    html += '</div>';
+
+    html += '<div class="chart-card"><h3>Team load by week</h3>' +
+      '<p class="csub">Planned days per week across the team, as far ahead as people have filled in. ' +
+      'Dashed line = capacity (' + fmt(capWeek) + ' d), dotted line = average.</p>' +
+      weeklyChart(wks, loads, capWeek, avgLoad) + '</div>';
+
+    html += '<div class="chart-card"><h3>Load by person</h3>' +
+      '<p class="csub">Total planned days over the horizon vs each person\'s ' + fmt(perPersonMax) + ' d capacity. Red = over.</p>' +
+      hbars(persons.map(p => ({
+        label: p.name, value: p.days, max: perPersonMax,
+        cls: p.days > perPersonMax + 0.001 ? 'over' : (p.days < perPersonMax * 0.5 ? 'under' : ''),
+        right: fmt(p.days) + ' d'
+      }))) + '</div>';
+
+    html += '<div class="chart-card"><h3>Effort by project</h3>' +
+      '<p class="csub">Where the team\'s planned days are going over the horizon.</p>' +
+      hbars(projects.map(p => ({ label: p.name, value: p.days, max: projMaxVal, cls: '', right: fmt(p.days) + ' d' }))) +
+      '</div>';
+
+    html += '<div class="stats-note"><b>Planned vs actual (timesheet)</b> is not wired in yet. ' +
+      'Once the timesheet actuals can be read, this view will overlay the real days logged against these plans.</div>';
+
+    return html;
+  }
+
   function wireContent() {
     document.querySelectorAll('.cellbtn').forEach(btn => {
       btn.addEventListener('click', () => openCell(btn.dataset.email, btn.dataset.week));
     });
     document.querySelectorAll('.avail-week-chip').forEach(btn => {
       btn.addEventListener('click', () => { state.availWeek = btn.dataset.week; render(); });
+    });
+    document.querySelectorAll('.stat-h-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const h = btn.dataset.h;
+        state.statHorizon = (h === 'all') ? 'all' : parseInt(h, 10);
+        render();
+      });
     });
   }
 
@@ -1081,18 +1283,17 @@
       render();
     });
   });
-  document.getElementById('tab-grid').addEventListener('click', () => {
-    state.view = 'grid';
-    document.getElementById('tab-grid').classList.add('active');
-    document.getElementById('tab-avail').classList.remove('active');
+  function switchTab(view, btnId) {
+    state.view = view;
+    ['tab-grid', 'tab-avail', 'tab-stats'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('active', id === btnId);
+    });
     render();
-  });
-  document.getElementById('tab-avail').addEventListener('click', () => {
-    state.view = 'avail';
-    document.getElementById('tab-avail').classList.add('active');
-    document.getElementById('tab-grid').classList.remove('active');
-    render();
-  });
+  }
+  document.getElementById('tab-grid').addEventListener('click', () => switchTab('grid', 'tab-grid'));
+  document.getElementById('tab-avail').addEventListener('click', () => switchTab('avail', 'tab-avail'));
+  document.getElementById('tab-stats').addEventListener('click', () => switchTab('stats', 'tab-stats'));
   document.getElementById('refresh-btn').addEventListener('click', () => load(false));
   document.getElementById('people-btn').addEventListener('click', e => { e.stopPropagation(); togglePeoplePanel(); });
   document.getElementById('people-all').addEventListener('click', () => {
