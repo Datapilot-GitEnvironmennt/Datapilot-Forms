@@ -275,6 +275,13 @@
   .hbar .hfill.over { background:var(--red); }
   .hbar .hfill.under { background:#9CC7D1; }
   .hbar .hval { font-size:11.5px; font-weight:700; color:var(--navy); text-align:right; white-space:nowrap; }
+  .htrack.pva { position:relative; }
+  .pva-plan { position:absolute; left:0; top:0; height:100%; background:#CDE7EC; border-radius:6px; }
+  .pva-act { position:absolute; left:0; top:50%; transform:translateY(-50%); height:9px; background:var(--navy); border-radius:5px; opacity:0.9; }
+  .pva-d { font-weight:700; }
+  .pva-d.over { color:var(--red); }
+  .pva-d.under { color:var(--muted); }
+  .pva-tag { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--muted); background:var(--sub-bg); border:1px solid var(--border); padding:1px 6px; border-radius:7px; margin-left:6px; }
   .stats-note { background:var(--sub-bg); border-left:4px solid var(--amber); border-radius:8px; padding:12px 14px; font-size:12px; color:var(--navy); line-height:1.55; }
   @media (max-width:760px){ .hbar { grid-template-columns:92px 1fr 52px; } .wlab { font-size:9px; } }
 
@@ -433,6 +440,7 @@
       <button data-n="4">4</button>
       <button data-n="6">6</button>
       <button data-n="8">8</button>
+      <button data-n="13">3 mois</button>
     </div>
     <button class="ghost" id="people-btn">People <span class="count" id="people-count">0</span></button>
     <button class="refresh" id="refresh-btn">Refresh</button>
@@ -489,6 +497,7 @@
   const PERSON_WEEK_CAPACITY = 5;
   const STEP = 0.5;
   const OTHER_PROJECT = 'Autre / Interne';
+  const TEAM_EVENT_PROJECT = 'Événement d\'équipe';
   const AVAIL = [
     { key: 'Disponible', emoji: '🟢' },
     { key: 'Partiel',    emoji: '🟡' },
@@ -501,7 +510,7 @@
   const state = {
     entries: [], people: [], projects: [],
     hidden: new Set(lsGetJson(LS_HIDDEN, [])),
-    weekCount: 2, view: 'grid', availWeek: '', statHorizon: 8
+    weekCount: 2, view: 'grid', availWeek: '', statHorizon: 8, actuals: []
   };
 
   const editor = {
@@ -823,80 +832,115 @@
     return h + '</div>';
   }
 
-  function renderStats() {
-    const wks = analyticsWeekList();
-    const vis = visiblePeople();
-    const capWeek = weekCapacity();
+  // Best-effort project code so capacity names ("[Sprint] ST2 - ... - Forward")
+  // and timesheet names ("[Sprint] Forward (ST2)") join on the same key.
+  function projectCode(name) {
+    if (!name) return '';
+    var s = String(name).trim();
+    var m = s.match(/\(([^)]+)\)\s*$/) || s.match(/\(([^)]+)\)/);
+    if (m) return m[1].trim().toUpperCase();
+    s = s.replace(/^\s*\[[^\]]*\]\s*/, '');
+    var head = s.split(' - ')[0].trim();
+    var tok = head.split(/\s+/)[0] || '';
+    if (tok && (/[0-9]/.test(tok) || tok === tok.toUpperCase()) && tok.length <= 6) return tok.toUpperCase();
+    return head.toUpperCase();
+  }
 
-    const loads = wks.map(w => weekLoad(w));
-    const totalPlanned = loads.reduce((a, b) => a + b, 0);
-    const totalCap = capWeek * wks.length;
-    const avgLoad = wks.length ? totalPlanned / wks.length : 0;
-    const avgUtil = totalCap ? Math.round((totalPlanned / totalCap) * 100) : 0;
-
-    let overPW = 0;
-    wks.forEach(w => vis.forEach(p => { if (cellTotal(p.email, w) > PERSON_WEEK_CAPACITY + 0.001) overPW++; }));
-    const cur = currentMondayIso();
-    const filledNow = vis.filter(p => hasFilled(p.email, cur)).length;
-
-    if (vis.length === 0 || totalPlanned === 0) {
-      return statsHead(wks) +
-        '<div class="stats-note">No planned days to chart yet for the current selection. ' +
-        'Fill some cells in the planning grid (or widen the People filter) and they will appear here.</div>';
+  // Combine planned (capacity) and actual (timesheet) per project code.
+  function projectRows() {
+    const visSet = new Set(visiblePeople().map(p => norm(p.email)));
+    const byCode = {};
+    function ensure(code, name) {
+      if (!byCode[code]) byCode[code] = { name: name, planned: 0, actual: 0, hasPlan: false, hasAct: false };
+      return byCode[code];
     }
-
-    const perPersonMax = PERSON_WEEK_CAPACITY * wks.length;
-    const persons = vis.map(p => {
-      let d = 0; wks.forEach(w => { d += cellTotal(p.email, w); });
-      return { name: p.name, days: d };
-    }).sort((a, b) => b.days - a.days);
-
-    const projMap = {};
-    const visSet = new Set(vis.map(p => norm(p.email)));
     state.entries.forEach(e => {
       if (!visSet.has(norm(e.personEmail))) return;
-      if (wks.indexOf(e.week) === -1) return;
       if (!(e.days > 0)) return;
-      const key = e.project || OTHER_PROJECT;
-      projMap[key] = (projMap[key] || 0) + e.days;
+      const name = e.project || OTHER_PROJECT;
+      const row = ensure(projectCode(name), name);
+      row.planned += e.days; row.hasPlan = true;
     });
-    const projects = Object.keys(projMap).map(k => ({ name: k, days: projMap[k] })).sort((a, b) => b.days - a.days);
-    const projMaxVal = projects.length ? projects[0].days : 1;
+    (state.actuals || []).forEach(a => {
+      const d = parseFloat(a.days) || 0;
+      if (!d) return;
+      const name = a.project || OTHER_PROJECT;
+      const row = ensure(projectCode(name), name);
+      row.actual += d; row.hasAct = true;
+    });
+    return Object.keys(byCode).map(c => byCode[c])
+      .sort((a, b) => (b.planned - a.planned) || (b.actual - a.actual));
+  }
 
-    let html = statsHead(wks);
+  // Planned-vs-actual bars: light bar = planned extent, dark inner bar = actual.
+  function pvaBars(rows, hasActuals) {
+    const scale = Math.max.apply(null, rows.map(r => Math.max(r.planned, r.actual)).concat([1]));
+    let h = '<div class="hbars">';
+    rows.forEach(r => {
+      const pPct = Math.min(100, (r.planned / scale) * 100);
+      const aPct = Math.min(100, (r.actual / scale) * 100);
+      const diff = r.actual - r.planned;
+      const tag = hasActuals && !r.hasPlan ? ' <span class="pva-tag">no plan</span>'
+                : (hasActuals && !r.hasAct ? ' <span class="pva-tag">no actual</span>' : '');
+      let right;
+      if (hasActuals) {
+        const sign = diff > 0.001 ? '+' : '';
+        const dcls = diff > 0.001 ? 'over' : (diff < -0.001 ? 'under' : '');
+        right = fmt(r.planned) + ' / ' + fmt(r.actual) +
+          ' <span class="pva-d ' + dcls + '">(' + sign + fmt(diff) + ')</span>';
+      } else {
+        right = fmt(r.planned) + ' d';
+      }
+      h += '<div class="hbar"><span class="hlab" title="' + esc(r.name) + '">' + esc(r.name) + tag + '</span>' +
+        '<span class="htrack pva">' +
+          '<span class="pva-plan" style="width:' + pPct + '%"></span>' +
+          (hasActuals ? '<span class="pva-act" style="width:' + aPct + '%"></span>' : '') +
+        '</span>' +
+        '<span class="hval">' + right + '</span></div>';
+    });
+    return h + '</div>';
+  }
 
-    html += '<div class="stat-cards">';
-    html += scard(fmt(totalPlanned) + ' d', 'Planned (horizon)',
-                  wks.length + ' week' + (wks.length > 1 ? 's' : '') + ', ' + vis.length + ' people', '');
-    html += scard(avgUtil + '%', 'Avg utilization', fmt(avgLoad) + ' of ' + fmt(capWeek) + ' d / week',
-                  avgUtil > 100 ? 'warn' : (avgUtil >= 70 ? 'good' : ''));
-    html += scard(String(overPW), 'Overbooked person-weeks',
-                  overPW ? 'someone over ' + PERSON_WEEK_CAPACITY + ' d' : 'none over ' + PERSON_WEEK_CAPACITY + ' d',
-                  overPW ? 'warn' : 'good');
-    html += scard(filledNow + ' / ' + vis.length, 'Planned this week', 'have filled the current week', '');
+  function renderStats() {
+    const rows = projectRows();
+    const hasActuals = (state.actuals || []).length > 0;
+    if (rows.length === 0) {
+      return '<div class="stats-note">No planned days yet. Fill some cells in the planning grid ' +
+        '(or widen the People filter) and the project view will appear here.</div>';
+    }
+    const totPlanned = rows.reduce((a, r) => a + r.planned, 0);
+    const totActual = rows.reduce((a, r) => a + r.actual, 0);
+    const projCount = rows.filter(r => r.hasPlan).length;
+
+    let html = '<div class="stat-cards">';
+    html += scard(String(projCount), 'Projects planned', 'with planned days', '');
+    html += scard(fmt(totPlanned) + ' d', 'Total planned', 'across all weeks', '');
+    if (hasActuals) {
+      html += scard(fmt(totActual) + ' d', 'Total actual', 'logged (timesheet)', '');
+      const diff = totActual - totPlanned;
+      html += scard((diff >= 0 ? '+' : '') + fmt(diff) + ' d', 'Actual vs planned',
+                    diff > 0.001 ? 'over plan' : (diff < -0.001 ? 'under plan' : 'on plan'),
+                    diff > 0.001 ? 'warn' : (diff < -0.001 ? '' : 'good'));
+    } else {
+      html += scard('pending', 'Total actual', 'connect consolidated', '');
+      html += scard('pending', 'Actual vs planned', 'connect consolidated', '');
+    }
     html += '</div>';
 
-    html += '<div class="chart-card"><h3>Team load by week</h3>' +
-      '<p class="csub">Planned days per week across the team, as far ahead as people have filled in. ' +
-      'Dashed line = capacity (' + fmt(capWeek) + ' d), dotted line = average.</p>' +
-      weeklyChart(wks, loads, capWeek, avgLoad) + '</div>';
+    html += '<div class="chart-card"><h3>Planned vs actual, by project</h3>';
+    html += hasActuals
+      ? '<p class="csub">Planned days (capacity) vs actual days logged (timesheet), matched by project code. ' +
+        'Light bar = planned, dark bar = actual. \u0394 is actual minus planned. ' +
+        '"No plan" = logged but not in the plan; "no actual" = planned but nothing logged yet.</p>'
+      : '<p class="csub">Planned days (capacity) per project. Actual (timesheet) shows here once the ' +
+        'consolidated sheet is connected.</p>';
+    html += pvaBars(rows, hasActuals);
+    html += '</div>';
 
-    html += '<div class="chart-card"><h3>Load by person</h3>' +
-      '<p class="csub">Total planned days over the horizon vs each person\'s ' + fmt(perPersonMax) + ' d capacity. Red = over.</p>' +
-      hbars(persons.map(p => ({
-        label: p.name, value: p.days, max: perPersonMax,
-        cls: p.days > perPersonMax + 0.001 ? 'over' : (p.days < perPersonMax * 0.5 ? 'under' : ''),
-        right: fmt(p.days) + ' d'
-      }))) + '</div>';
-
-    html += '<div class="chart-card"><h3>Effort by project</h3>' +
-      '<p class="csub">Where the team\'s planned days are going over the horizon.</p>' +
-      hbars(projects.map(p => ({ label: p.name, value: p.days, max: projMaxVal, cls: '', right: fmt(p.days) + ' d' }))) +
-      '</div>';
-
-    html += '<div class="stats-note"><b>Planned vs actual (timesheet)</b> is not wired in yet. ' +
-      'Once the timesheet actuals can be read, this view will overlay the real days logged against these plans.</div>';
-
+    if (!hasActuals) {
+      html += '<div class="stats-note"><b>Actual from the timesheet is not connected yet.</b> ' +
+        'Add the reader to Code.gs so the capacity endpoint returns actuals, and these bars fill in automatically.</div>';
+    }
     return html;
   }
 
@@ -1081,7 +1125,11 @@
       oOther.value = OTHER_PROJECT; oOther.textContent = OTHER_PROJECT;
       if (line.project === OTHER_PROJECT) oOther.selected = true;
       sel.appendChild(oOther);
-      if (line.project && line.project !== OTHER_PROJECT && state.projects.indexOf(line.project) === -1) {
+      const oEvent = document.createElement('option');
+      oEvent.value = TEAM_EVENT_PROJECT; oEvent.textContent = '📅 ' + TEAM_EVENT_PROJECT;
+      if (line.project === TEAM_EVENT_PROJECT) oEvent.selected = true;
+      sel.appendChild(oEvent);
+      if (line.project && line.project !== OTHER_PROJECT && line.project !== TEAM_EVENT_PROJECT && state.projects.indexOf(line.project) === -1) {
         const oKeep = document.createElement('option');
         oKeep.value = line.project; oKeep.textContent = line.project + ' (inactive)';
         oKeep.selected = true;
@@ -1261,6 +1309,7 @@
       state.people = (Array.isArray(data.people) ? data.people : [])
         .map(p => ({ email: norm(p.email), name: p.name || p.email }));
       state.projects = Array.isArray(data.projects) ? data.projects : [];
+      state.actuals = Array.isArray(data.actuals) ? data.actuals : [];
       document.getElementById('meta').textContent = 'Loaded ' + new Date().toLocaleTimeString();
       render();
     } catch (err) {
