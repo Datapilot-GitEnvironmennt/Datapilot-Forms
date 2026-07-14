@@ -247,7 +247,38 @@
   .scard .l { font-size:10px; text-transform:uppercase; letter-spacing:0.7px; color:var(--muted); font-weight:600; margin-top:3px; }
   .scard .s { font-size:11px; color:var(--muted); margin-top:3px; line-height:1.4; }
   .chart-card { background:white; border:1px solid var(--border); border-radius:12px; padding:16px 18px; box-shadow:0 1px 3px rgba(0,0,0,0.04); margin-bottom:14px; }
-  .chart-card h3 { margin:0 0 4px 0; font-size:14px; color:var(--navy); font-weight:600; }
+  .chart-card h3 { margin:0 0 4px 0; font-size:14px; color:var(--navy); font-weight:600; display:flex; align-items:center; gap:7px; }
+  /* info overlay: small ! badge, tooltip on hover */
+  .info {
+    position:relative; display:inline-flex; align-items:center; justify-content:center;
+    width:15px; height:15px; border-radius:50%;
+    background:var(--sub-bg); border:1px solid var(--border);
+    color:var(--muted); font-size:10px; font-weight:800; font-style:normal;
+    cursor:help; flex-shrink:0; vertical-align:middle; line-height:1;
+  }
+  .info:hover { background:var(--navy); border-color:var(--navy); color:white; }
+  .info .tip {
+    position:absolute; top:calc(100% + 8px); left:50%; transform:translateX(-50%);
+    width:280px; max-width:80vw; z-index:80;
+    background:var(--navy); color:white; border-radius:10px;
+    padding:11px 13px; text-align:left;
+    font-size:11.5px; font-weight:400; line-height:1.55; letter-spacing:0; text-transform:none;
+    box-shadow:0 12px 30px rgba(8,24,38,0.35);
+    display:none; cursor:default;
+  }
+  .info:hover .tip { display:block; }
+  .info .tip::before {
+    content:''; position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
+    border:6px solid transparent; border-bottom-color:var(--navy);
+  }
+  .info .tip b { color:var(--amber); font-weight:700; }
+  .info .tip .who { display:block; margin-top:7px; padding-top:7px; border-top:1px solid rgba(255,255,255,0.18); font-size:10.5px; color:#B8C7D2; }
+  .info .tip .who b { color:#B8C7D2; font-weight:700; }
+  /* keep the tooltip on-screen when the icon sits near the right edge */
+  .scard .info { position:absolute; top:12px; right:12px; }
+  .scard { position:relative; }
+  .scard .info .tip { left:auto; right:-6px; transform:none; }
+  .scard .info .tip::before { left:auto; right:10px; transform:none; }
   .chart-card .csub { margin:0 0 6px 0; font-size:11.5px; color:var(--muted); line-height:1.45; }
   /* weekly projection columns */
   .wplot { position:relative; display:flex; align-items:flex-end; gap:10px; height:170px; margin-top:22px; }
@@ -965,8 +996,17 @@
     return rows;
   }
 
-  function scardHtml(v, l, s, cls, extra) {
-    return '<div class="scard ' + (cls || '') + '"' + (extra || '') + '><div class="v">' + v + '</div>' +
+  // Small "!" badge with a hover tooltip: what the number means, what it
+  // needs to be reliable, and who it is for.
+  function infoIcon(text, who) {
+    return '<i class="info">!<span class="tip">' + text +
+      (who ? '<span class="who"><b>For:</b> ' + who + '</span>' : '') + '</span></i>';
+  }
+
+  function scardHtml(v, l, s, cls, extra, info) {
+    return '<div class="scard ' + (cls || '') + '"' + (extra || '') + '>' +
+      (info || '') +
+      '<div class="v">' + v + '</div>' +
       '<div class="l">' + esc(l) + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') +
       (extra ? '<div class="hint">click to see who</div>' : '') + '</div>';
   }
@@ -1095,27 +1135,39 @@
     html += scardHtml(fmt(freeNext) + ' d', 'Free to book next week',
       withRoom + ' of ' + vis.length + ' people have room' +
       (notPlanned.length ? ', ' + notPlanned.length + ' unknown (not filled in)' : ''),
-      freeNext > 0 ? 'good' : 'warn', '');
+      freeNext > 0 ? 'good' : 'warn', '',
+      infoIcon('Days still bookable next week: for each person who filled in, <b>5 minus their planned days</b>. People on Cong\u00e9 count as 0. People who have not filled in are NOT counted, so this is a floor, not an estimate.<br><b>Needs:</b> everyone fills their next week.',
+               'Ana\u00efs / Anne-Ga\u00eblle before answering a client, managers before taking new work.'));
     html += scardHtml(bookedNextPct + '%', 'Booked next week',
-      fmt(weekLoad(nextW)) + ' of ' + fmt(cap) + ' d', bookedNextPct > 100 ? 'warn' : '', '');
+      fmt(weekLoad(nextW)) + ' of ' + fmt(cap) + ' d', bookedNextPct > 100 ? 'warn' : '', '',
+      infoIcon('Share of total team capacity (visible people \u00d7 5 d) already planned for next week. Over <b>100%</b> means the team as a whole is overbooked.',
+               'managers, for a one-glance load check.'));
     html += scardHtml(crunch ? fmtWeek(crunch) : 'none', 'First crunch week',
       crunch ? 'load reaches 90% of capacity' : 'no week over 90% in horizon',
-      crunch ? 'warn' : 'good', '');
+      crunch ? 'warn' : 'good', '',
+      infoIcon('The first week in the selected horizon where planned load reaches <b>90% of capacity</b>. An early warning for staffing: recruit, book a freelance, or shift work before that week.<br><b>Needs:</b> plans filled beyond next week to be meaningful.',
+               'No\u00e9mie / Madou for staffing and hiring decisions.'));
     html += scardHtml(String(notPlanned.length), 'Not planned next week',
       notPlanned.length ? 'plans may be incomplete' : 'everyone has filled in',
-      notPlanned.length ? '' : 'good', notPlanned.length ? ' id="kpi-np"' : '');
+      notPlanned.length ? '' : 'good', notPlanned.length ? ' id="kpi-np"' : '',
+      infoIcon('People with <b>nothing filled in</b> for next week. Every other number on this page is only as reliable as this one is low. Click the card to see the names.',
+               'managers chasing completeness each week.'));
     html += '</div>';
     if (state.showNP && notPlanned.length) {
       html += '<div class="namechips" id="np-list">' + notPlanned.map(n => '<span>' + esc(n) + '</span>').join('') + '</div>';
     }
 
-    html += '<div class="chart-card"><h3>Team load by week</h3>' +
+    html += '<div class="chart-card"><h3>Team load by week' +
+      infoIcon('Planned days per week, all visible people summed. Dashed line = team capacity, dotted = average. <b>Red column</b> = overbooked week, green = exactly full. Hover a column for the free days.<br><b>Needs:</b> plans filled over the horizon; empty future weeks show as low load, not as free-for-sure.',
+               'everyone, for the medium-term picture; No\u00e9mie / Madou for load balancing.') + '</h3>' +
       '<p class="csub">Planned days vs capacity (' + fmt(cap) + ' d/week). Hover a column for the free days that week.</p>' +
       weeklyChart(wks, loads, cap, avgLoad) + '</div>';
 
     // ---- project section ----
     const pvaDisabled = !hasActuals;
-    html += '<div class="chart-card"><h3>Projects</h3>';
+    html += '<div class="chart-card"><h3>Projects' +
+      infoIcon('<b>Forecast</b>: where the planned days go over the horizon. <b>Plan vs actual</b>: past weeks only, planned (capacity) vs logged (timesheet), matched by project code. Click any project to drill into the per-person / per-week detail.<br><b>Needs:</b> for Plan vs actual, the timesheet actuals connected and project names carrying their (CODE).',
+               'project leads for their own projects; managers for the portfolio.') + '</h3>';
     html += '<div class="proj-filters">';
     html += '<button class="stat-h-chip mode-chip' + (state.projMode === 'forecast' ? ' on' : '') + '" data-mode="forecast">Forecast</button>';
     html += '<button class="stat-h-chip mode-chip' + (state.projMode === 'pva' ? ' on' : '') + '" data-mode="pva"' + (pvaDisabled ? ' disabled title="Connect the timesheet actuals first"' : '') + '>Plan vs actual</button>';
@@ -1148,9 +1200,15 @@
       const noPlanDays = rows.filter(r => !r.hasPlan).reduce((a, r) => a + r.actual, 0);
       html += '<div class="stat-cards">';
       html += scardHtml(tp > 0 ? acc + '%' : 'n/a', 'Plan accuracy', tp > 0 ? fmt(ta) + ' d done of ' + fmt(tp) + ' d planned' : 'no plan in this period',
-        acc > 115 || (tp > 0 && acc < 70) ? 'warn' : 'good', '');
-      html += scardHtml(String(overCount), 'Projects over plan', 'actual exceeds plan by 0.5 d+', overCount ? 'warn' : 'good', '');
-      html += scardHtml(fmt(noPlanDays) + ' d', 'Logged without a plan', 'time on projects never planned', noPlanDays > 0.5 ? 'warn' : 'good', '');
+        acc > 115 || (tp > 0 && acc < 70) ? 'warn' : 'good', '',
+        infoIcon('Actual days logged \u00f7 days planned over the selected past period. <b>100%</b> = plans match reality; far above = under-planning, far below = over-planning or work not done. Early on, with only a week or two of data, extreme values are normal.',
+                 'managers, to judge how much to trust the forecast.'));
+      html += scardHtml(String(overCount), 'Projects over plan', 'actual exceeds plan by 0.5 d+', overCount ? 'warn' : 'good', '',
+        infoIcon('Projects where logged time exceeds planned time by more than <b>0.5 day</b> over the period. Sort the list by \u00ab biggest gap \u00bb to see them first, then click one for the week-by-week detail.',
+                 'project leads and managers, budget-drift watch.'));
+      html += scardHtml(fmt(noPlanDays) + ' d', 'Logged without a plan', 'time on projects never planned', noPlanDays > 0.5 ? 'warn' : 'good', '',
+        infoIcon('Days logged in the timesheet on projects that <b>never appeared in anyone\u2019s plan</b> for the period. That is unplanned work: scope creep, urgent requests, or a project code mismatch between the two tools.',
+                 'managers; also flags naming mismatches to fix.'));
       html += '</div>';
     }
 
