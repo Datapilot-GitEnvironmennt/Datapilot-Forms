@@ -247,7 +247,8 @@
   .scard .l { font-size:10px; text-transform:uppercase; letter-spacing:0.7px; color:var(--muted); font-weight:600; margin-top:3px; }
   .scard .s { font-size:11px; color:var(--muted); margin-top:3px; line-height:1.4; }
   .chart-card { background:white; border:1px solid var(--border); border-radius:12px; padding:16px 18px; box-shadow:0 1px 3px rgba(0,0,0,0.04); margin-bottom:14px; }
-  .chart-card h3 { margin:0 0 4px 0; font-size:14px; color:var(--navy); font-weight:600; display:flex; align-items:center; gap:7px; }
+  .chart-card h3 { margin:0 0 4px 0; font-size:14px; color:var(--navy); font-weight:600; display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+  .chart-card h3 .h3-modes { margin-left:auto; display:flex; gap:8px; }
   /* info overlay: small ! badge, tooltip on hover */
   .info {
     position:relative; display:inline-flex; align-items:center; justify-content:center;
@@ -1170,11 +1171,12 @@
     // ---- project section ----
     const pvaDisabled = !hasActuals;
     html += '<div class="chart-card"><h3>Projects' +
-      infoIcon('<b>Forecast</b>: where the planned days go over the horizon. <b>Plan vs actual</b>: past weeks only, planned (capacity) vs logged (timesheet), matched by project code. Click any project to drill into the per-person / per-week detail.<br><b>Needs:</b> for Plan vs actual, the timesheet actuals connected and project names carrying their (CODE).',
-               'project leads for their own projects; managers for the portfolio.') + '</h3>';
-    html += '<div class="proj-filters">';
-    html += '<button class="stat-h-chip mode-chip' + (state.projMode === 'forecast' ? ' on' : '') + '" data-mode="forecast">Forecast</button>';
-    html += '<button class="stat-h-chip mode-chip' + (state.projMode === 'pva' ? ' on' : '') + '" data-mode="pva"' + (pvaDisabled ? ' disabled title="Connect the timesheet actuals first"' : '') + '>Plan vs actual</button>';
+      infoIcon('<b>Forecast</b>: where the planned days go over the horizon. <b>Plan vs actual</b>: past weeks only, planned (capacity) vs logged (timesheet), matched by project code. Click any project to drill into the per-person / per-week detail.<br><b>Needs:</b> for Plan vs actual, the timesheet actuals connected and project names carrying their (CODE).') +
+      '<span class="h3-modes">' +
+        '<button class="stat-h-chip mode-chip' + (state.projMode === 'forecast' ? ' on' : '') + '" data-mode="forecast">Forecast</button>' +
+        '<button class="stat-h-chip mode-chip' + (state.projMode === 'pva' ? ' on' : '') + '" data-mode="pva"' + (pvaDisabled ? ' disabled title="Connect the timesheet actuals first"' : '') + '>Plan vs actual</button>' +
+      '</span></h3>';
+    html += '<div class="stats-head" style="margin:2px 0 12px">';
     if (state.projMode === 'pva') {
       html += '<span class="lbl">Period:</span>';
       [{ k: 1, t: 'Last week' }, { k: 4, t: '4 wks' }, { k: 8, t: '8 wks' }, { k: 'all', t: 'All' }].forEach(o => {
