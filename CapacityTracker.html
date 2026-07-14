@@ -998,9 +998,8 @@
 
   // Small "!" badge with a hover tooltip: what the number means, what it
   // needs to be reliable, and who it is for.
-  function infoIcon(text, who) {
-    return '<i class="info">!<span class="tip">' + text +
-      (who ? '<span class="who"><b>For:</b> ' + who + '</span>' : '') + '</span></i>';
+  function infoIcon(text) {
+    return '<i class="info">!<span class="tip">' + text + '</span></i>';
   }
 
   function scardHtml(v, l, s, cls, extra, info) {
