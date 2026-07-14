@@ -287,6 +287,37 @@
   .pva-d.over { color:var(--red); }
   .pva-d.under { color:var(--muted); }
   .pva-tag { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--muted); background:var(--sub-bg); border:1px solid var(--border); padding:1px 6px; border-radius:7px; margin-left:6px; }
+  /* dashboard extras */
+  .scard.click { cursor:pointer; transition:box-shadow .15s, transform .15s; }
+  .scard.click:hover { box-shadow:0 4px 12px rgba(15,42,61,0.12); transform:translateY(-1px); }
+  .scard .hint { font-size:9.5px; color:var(--teal); font-weight:600; margin-top:4px; }
+  .namechips { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 14px 0; }
+  .namechips span { background:var(--sub-bg); border:1px solid var(--border); border-radius:14px; padding:4px 11px; font-size:12px; color:var(--navy); font-weight:500; }
+  .proj-filters { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+  .proj-filters input[type="text"] {
+    flex:1; min-width:150px; padding:8px 12px; border:1px solid var(--border); border-radius:8px;
+    font-family:inherit; font-size:12.5px;
+  }
+  .proj-filters input[type="text"]:focus { outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(63,166,184,0.15); }
+  .proj-filters select {
+    padding:8px 10px; border:1px solid var(--border); border-radius:8px;
+    font-family:inherit; font-size:12px; background:white; color:var(--navy); font-weight:600; cursor:pointer;
+  }
+  .mode-chip[disabled] { opacity:0.45; cursor:not-allowed; }
+  .hbar.clickable { cursor:pointer; border-radius:8px; padding:6px 8px; margin:0 -8px; }
+  .hbar.clickable:hover { background:#F0F7FA; }
+  .hbar .caret { display:inline-block; font-size:9px; color:var(--muted); margin-right:6px; transition:transform .15s; }
+  .hbar.open .caret { transform:rotate(90deg); }
+  .drill {
+    margin:8px 0 2px 14px; padding:10px 14px; background:var(--sub-bg);
+    border-left:3px solid var(--teal); border-radius:8px;
+  }
+  .drill table { width:100%; border-collapse:collapse; font-size:12px; }
+  .drill th { text-align:left; color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:0.5px; padding:3px 8px 5px 0; font-weight:600; }
+  .drill td { padding:4px 8px 4px 0; color:var(--navy); border-top:1px solid var(--border); }
+  .drill td.num, .drill th.num { text-align:right; white-space:nowrap; }
+  .drill .dl-over { color:var(--red); font-weight:700; }
+  .drill .dl-under { color:var(--muted); font-weight:700; }
   .stats-note { background:var(--sub-bg); border-left:4px solid var(--amber); border-radius:8px; padding:12px 14px; font-size:12px; color:var(--navy); line-height:1.55; }
   @media (max-width:760px){ .hbar .hval { font-size:10.5px; } .wlab { font-size:9px; } }
   /* legend for the planned-vs-actual bars */
@@ -523,7 +554,9 @@
   const state = {
     entries: [], people: [], projects: [],
     hidden: new Set(lsGetJson(LS_HIDDEN, [])),
-    weekCount: 2, view: 'grid', availWeek: '', statHorizon: 8, actuals: []
+    weekCount: 2, view: 'grid', availWeek: '', statHorizon: 8, actuals: [],
+    projMode: 'forecast', projType: '', projSearch: '', projSort: 'days',
+    pvaPeriod: 4, statsOpen: {}, showNP: false
   };
 
   const editor = {
@@ -775,8 +808,8 @@
     return html;
   }
 
-  // ---------- STATS / PROJECTION (from capacity data) ----------
-  function analyticsWeekList() {
+  // ---------- STATS / PROJECTION (dashboard) ----------
+  function statsHorizonWeeks() {
     const cur = currentMondayIso();
     if (state.statHorizon === 'all') {
       const vis = new Set(visiblePeople().map(p => norm(p.email)));
@@ -788,29 +821,28 @@
       while (g < 26) { out.push(w); if (w >= max) break; w = addWeeks(w, 1); g++; }
       return out;
     }
-    const n = state.statHorizon;
     const out = []; let w = cur;
-    for (let i = 0; i < n; i++) { out.push(w); w = addWeeks(w, 1); }
+    for (let i = 0; i < state.statHorizon; i++) { out.push(w); w = addWeeks(w, 1); }
+    return out;
+  }
+
+  function pastWeeksList() {
+    const cur = currentMondayIso();
+    let minA = '';
+    (state.actuals || []).forEach(a => { if (a.week && (!minA || a.week < minA)) minA = a.week; });
+    if (!minA) return [];
+    let start;
+    if (state.pvaPeriod === 'all') start = minA;
+    else {
+      start = addWeeks(cur, -state.pvaPeriod);
+      if (start < minA) start = minA;
+    }
+    const out = []; let w = start, g = 0;
+    while (w < cur && g < 60) { out.push(w); w = addWeeks(w, 1); g++; }
     return out;
   }
 
   function weekBadgeShort(i) { return i === 0 ? 'now' : '+' + i; }
-
-  function scard(v, l, s, cls) {
-    return '<div class="scard ' + (cls || '') + '"><div class="v">' + v + '</div>' +
-      '<div class="l">' + esc(l) + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>';
-  }
-
-  function statsHead(wks) {
-    const opts = [{ k: 4, t: '4 wks' }, { k: 8, t: '8 wks' }, { k: 12, t: '12 wks' }, { k: 'all', t: 'All planned' }];
-    let h = '<div class="stats-head"><span class="lbl">Horizon:</span>';
-    opts.forEach(o => {
-      h += '<button class="stat-h-chip' + (state.statHorizon === o.k ? ' on' : '') + '" data-h="' + o.k + '">' + o.t + '</button>';
-    });
-    h += '<span class="meta" style="margin-left:auto">' + fmtWeek(wks[0]) + ' to ' + fmtWeek(wks[wks.length - 1]) +
-         ' (' + wks.length + ' week' + (wks.length > 1 ? 's' : '') + ')</span></div>';
-    return h;
-  }
 
   function weeklyChart(wks, loads, cap, avg) {
     const maxVal = Math.max(cap, Math.max.apply(null, loads), 1);
@@ -823,7 +855,7 @@
       const cls = v > cap + 0.001 ? 'over' : (Math.abs(v - cap) < 0.001 && v > 0 ? 'full' : '');
       const util = cap ? Math.round((v / cap) * 100) : 0;
       cols += '<div class="wcol">' +
-        '<div class="wtip">' + fmtWeek(w) + ': ' + fmt(v) + ' / ' + fmt(cap) + ' d (' + util + '%)</div>' +
+        '<div class="wtip">' + fmtWeek(w) + ': ' + fmt(v) + ' / ' + fmt(cap) + ' d (' + util + '%), free ' + fmt(Math.max(0, cap - v)) + ' d</div>' +
         '<div class="wcol-bar ' + cls + '" style="height:' + hPct + '%"><span class="wcol-val">' + fmt(v) + '</span></div>' +
         '</div>';
       labs += '<div class="wlab"><b>' + weekBadgeShort(i) + '</b>' + fmtWeek(w) + '</div>';
@@ -833,9 +865,6 @@
     return '<div class="wchart"><div class="wplot">' + cols + capLine + avgLine + '</div><div class="wlabels">' + labs + '</div></div>';
   }
 
-
-  // Best-effort project code so capacity names ("[Sprint] ST2 - ... - Forward")
-  // and timesheet names ("[Sprint] Forward (ST2)") join on the same key.
   function projectCode(name) {
     if (!name) return '';
     var s = String(name).trim();
@@ -848,33 +877,88 @@
     return head.toUpperCase();
   }
 
-  // Combine planned (capacity) and actual (timesheet) per project code.
-  function projectRows() {
+  // planned per code over a week list (visible people); also per-person and per-week
+  function plannedAgg(wks) {
+    const inWks = new Set(wks);
     const visSet = new Set(visiblePeople().map(p => norm(p.email)));
     const byCode = {};
-    function ensure(code, name) {
-      if (!byCode[code]) byCode[code] = { name: name, planned: 0, actual: 0, hasPlan: false, hasAct: false };
-      return byCode[code];
-    }
     state.entries.forEach(e => {
       if (!visSet.has(norm(e.personEmail))) return;
+      if (!inWks.has(e.week)) return;
       if (!(e.days > 0)) return;
       const name = e.project || OTHER_PROJECT;
-      const row = ensure(projectCode(name), name);
-      row.planned += e.days; row.hasPlan = true;
+      const code = projectCode(name);
+      if (!byCode[code]) byCode[code] = { name: name, planned: 0, byPerson: {}, byWeek: {} };
+      const b = byCode[code];
+      b.planned += e.days;
+      const pn = e.personName || e.personEmail;
+      b.byPerson[pn] = (b.byPerson[pn] || 0) + e.days;
+      b.byWeek[e.week] = (b.byWeek[e.week] || 0) + e.days;
     });
+    return byCode;
+  }
+
+  function actualAgg(wks) {
+    const inWks = new Set(wks);
+    const byCode = {};
     (state.actuals || []).forEach(a => {
       const d = parseFloat(a.days) || 0;
       if (!d) return;
+      if (!inWks.has(a.week)) return;
       const name = a.project || OTHER_PROJECT;
-      const row = ensure(projectCode(name), name);
-      row.actual += d; row.hasAct = true;
+      const code = projectCode(name);
+      if (!byCode[code]) byCode[code] = { name: name, actual: 0, byWeek: {} };
+      byCode[code].actual += d;
+      byCode[code].byWeek[a.week] = (byCode[code].byWeek[a.week] || 0) + d;
     });
-    return Object.keys(byCode).map(c => byCode[c])
-      .sort((a, b) => (b.planned - a.planned) || (b.actual - a.actual));
+    return byCode;
   }
 
-  // Planned-vs-actual bars: light bar = planned extent, dark inner bar = actual.
+  function projectRowsFor(mode) {
+    if (mode === 'pva') {
+      const wks = pastWeeksList();
+      const P = plannedAgg(wks), A = actualAgg(wks);
+      const codes = Array.from(new Set(Object.keys(P).concat(Object.keys(A))));
+      return codes.map(c => ({
+        code: c,
+        name: (P[c] && P[c].name) || (A[c] && A[c].name),
+        planned: P[c] ? P[c].planned : 0,
+        actual: A[c] ? A[c].actual : 0,
+        hasPlan: !!P[c], hasAct: !!A[c],
+        byPerson: P[c] ? P[c].byPerson : {},
+        pByWeek: P[c] ? P[c].byWeek : {}, aByWeek: A[c] ? A[c].byWeek : {},
+        weeks: wks
+      }));
+    }
+    const wks = statsHorizonWeeks();
+    const P = plannedAgg(wks);
+    return Object.keys(P).map(c => ({
+      code: c, name: P[c].name, planned: P[c].planned, actual: 0,
+      hasPlan: true, hasAct: false,
+      byPerson: P[c].byPerson, pByWeek: P[c].byWeek, aByWeek: {}, weeks: wks
+    }));
+  }
+
+  function filteredSortedRows() {
+    let rows = projectRowsFor(state.projMode);
+    if (state.projType) rows = rows.filter(r => projectType(r.name) === state.projType);
+    const q = state.projSearch.trim().toLowerCase();
+    if (q) rows = rows.filter(r => String(r.name).toLowerCase().indexOf(q) !== -1);
+    const s = state.projSort;
+    rows.sort((a, b) => {
+      if (s === 'name') return String(a.name).localeCompare(String(b.name));
+      if (s === 'delta') return (Math.abs(b.actual - b.planned)) - (Math.abs(a.actual - a.planned));
+      return (b.planned - a.planned) || (b.actual - a.actual);
+    });
+    return rows;
+  }
+
+  function scardHtml(v, l, s, cls, extra) {
+    return '<div class="scard ' + (cls || '') + '"' + (extra || '') + '><div class="v">' + v + '</div>' +
+      '<div class="l">' + esc(l) + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') +
+      (extra ? '<div class="hint">click to see who</div>' : '') + '</div>';
+  }
+
   function pvaLegend(hasActuals) {
     let h = '<div class="pva-legend">';
     h += '<span><i class="sw-plan"></i> Planned (capacity)</span>';
@@ -883,21 +967,58 @@
       h += '<span><i class="sw-dpos">(+)</i> over plan</span>';
       h += '<span><i class="sw-dneg">(-)</i> under plan</span>';
     }
-    h += '</div>';
+    h += '<span style="margin-left:auto">click a project for the detail</span></div>';
     return h;
   }
 
-  function pvaBars(rows, hasActuals) {
+  function drillHtml(r, pva) {
+    let h = '<div class="drill">';
+    if (pva) {
+      h += '<table><tr><th>Week</th><th class="num">Planned</th><th class="num">Actual</th><th class="num">Diff</th></tr>';
+      r.weeks.forEach(w => {
+        const p = r.pByWeek[w] || 0, a = r.aByWeek[w] || 0;
+        if (!p && !a) return;
+        const d = a - p;
+        const dcls = d > 0.001 ? 'dl-over' : (d < -0.001 ? 'dl-under' : '');
+        h += '<tr><td>' + fmtWeek(w) + '</td><td class="num">' + fmt(p) + '</td><td class="num">' + fmt(a) +
+             '</td><td class="num ' + dcls + '">' + (d > 0 ? '+' : '') + fmt(d) + '</td></tr>';
+      });
+      h += '</table>';
+    } else {
+      const people = Object.keys(r.byPerson).sort((a, b) => r.byPerson[b] - r.byPerson[a]);
+      h += '<table><tr><th>Person</th><th class="num">Planned</th></tr>';
+      people.forEach(pn => {
+        h += '<tr><td>' + esc(pn) + '</td><td class="num">' + fmt(r.byPerson[pn]) + ' d</td></tr>';
+      });
+      const wkKeys = r.weeks.filter(w => r.pByWeek[w]);
+      if (wkKeys.length) {
+        h += '<tr><th style="padding-top:10px">Week</th><th class="num" style="padding-top:10px">Planned</th></tr>';
+        wkKeys.forEach(w => {
+          h += '<tr><td>' + fmtWeek(w) + '</td><td class="num">' + fmt(r.pByWeek[w]) + ' d</td></tr>';
+        });
+      }
+      h += '</table>';
+    }
+    return h + '</div>';
+  }
+
+  function projBarsHtml() {
+    const rows = filteredSortedRows();
+    const pva = state.projMode === 'pva';
+    if (rows.length === 0) {
+      return '<div class="avail-empty" style="padding:14px 2px">No project matches the current filters.</div>';
+    }
     const scale = Math.max.apply(null, rows.map(r => Math.max(r.planned, r.actual)).concat([1]));
-    let h = pvaLegend(hasActuals) + '<div class="hbars">';
+    let h = pvaLegend(pva) + '<div class="hbars">';
     rows.forEach(r => {
+      const open = !!state.statsOpen[r.code];
       const pPct = Math.min(100, (r.planned / scale) * 100);
       const aPct = Math.min(100, (r.actual / scale) * 100);
       const diff = r.actual - r.planned;
-      const tag = hasActuals && !r.hasPlan ? ' <span class="pva-tag">no plan</span>'
-                : (hasActuals && !r.hasAct ? ' <span class="pva-tag">no actual</span>' : '');
+      const tag = pva && !r.hasPlan ? ' <span class="pva-tag">no plan</span>'
+                : (pva && !r.hasAct ? ' <span class="pva-tag">no actual</span>' : '');
       let right;
-      if (hasActuals) {
+      if (pva) {
         const sign = diff > 0.001 ? '+' : '';
         const dcls = diff > 0.001 ? 'over' : (diff < -0.001 ? 'under' : '');
         right = fmt(r.planned) + ' / ' + fmt(r.actual) +
@@ -905,59 +1026,180 @@
       } else {
         right = fmt(r.planned) + ' d';
       }
-      h += '<div class="hbar">' +
-        '<span class="hlab">' + esc(r.name) + tag + '</span>' +
+      h += '<div class="hbar clickable' + (open ? ' open' : '') + '" data-code="' + esc(r.code) + '">' +
+        '<span class="hlab"><span class="caret">&#9654;</span>' + esc(r.name) + tag + '</span>' +
         '<span class="hrow">' +
           '<span class="htrack pva">' +
             '<span class="pva-plan" style="width:' + pPct + '%"></span>' +
-            (hasActuals ? '<span class="pva-act" style="width:' + aPct + '%"></span>' : '') +
+            (pva ? '<span class="pva-act" style="width:' + aPct + '%"></span>' : '') +
           '</span>' +
           '<span class="hval">' + right + '</span>' +
-        '</span></div>';
+        '</span>' +
+        (open ? drillHtml(r, pva) : '') +
+        '</div>';
     });
     return h + '</div>';
   }
 
   function renderStats() {
-    const rows = projectRows();
+    const wks = statsHorizonWeeks();
+    const vis = visiblePeople();
+    const cap = weekCapacity();
+    const cur = currentMondayIso();
+    const nextW = addWeeks(cur, 1);
     const hasActuals = (state.actuals || []).length > 0;
-    if (rows.length === 0) {
-      return '<div class="stats-note">No planned days yet. Fill some cells in the planning grid ' +
-        '(or widen the People filter) and the project view will appear here.</div>';
-    }
-    const totPlanned = rows.reduce((a, r) => a + r.planned, 0);
-    const totActual = rows.reduce((a, r) => a + r.actual, 0);
-    const projCount = rows.filter(r => r.hasPlan).length;
 
-    let html = '<div class="stat-cards">';
-    html += scard(String(projCount), 'Projects planned', 'with planned days', '');
-    html += scard(fmt(totPlanned) + ' d', 'Total planned', 'across all weeks', '');
-    if (hasActuals) {
-      html += scard(fmt(totActual) + ' d', 'Total actual', 'logged (timesheet)', '');
-      const diff = totActual - totPlanned;
-      html += scard((diff >= 0 ? '+' : '') + fmt(diff) + ' d', 'Actual vs planned',
-                    diff > 0.001 ? 'over plan' : (diff < -0.001 ? 'under plan' : 'on plan'),
-                    diff > 0.001 ? 'warn' : (diff < -0.001 ? '' : 'good'));
-    } else {
-      html += scard('pending', 'Total actual', 'connect consolidated', '');
-      html += scard('pending', 'Actual vs planned', 'connect consolidated', '');
+    // ---- forward KPIs ----
+    let freeNext = 0, fullyBookedNext = 0;
+    const notPlanned = [];
+    vis.forEach(p => {
+      const t = cellTotal(p.email, nextW);
+      freeNext += Math.max(0, PERSON_WEEK_CAPACITY - t);
+      if (t >= PERSON_WEEK_CAPACITY - 0.001) fullyBookedNext++;
+      if (!hasFilled(p.email, nextW)) notPlanned.push(p.name);
+    });
+    const loads = wks.map(w => weekLoad(w));
+    const avgLoad = wks.length ? loads.reduce((a, b) => a + b, 0) / wks.length : 0;
+    let crunch = '';
+    for (let i = 0; i < wks.length; i++) {
+      if (cap && loads[i] / cap >= 0.9) { crunch = wks[i]; break; }
+    }
+    const bookedNextPct = cap ? Math.round((weekLoad(nextW) / cap) * 100) : 0;
+
+    let html = '';
+    // horizon chips
+    const opts = [{ k: 2, t: '2 wks' }, { k: 4, t: '4 wks' }, { k: 8, t: '8 wks' }, { k: 13, t: '3 mois' }, { k: 'all', t: 'All planned' }];
+    html += '<div class="stats-head"><span class="lbl">Horizon:</span>';
+    opts.forEach(o => {
+      html += '<button class="stat-h-chip' + (state.statHorizon === o.k ? ' on' : '') + '" data-h="' + o.k + '">' + o.t + '</button>';
+    });
+    html += '<span class="meta" style="margin-left:auto">' + fmtWeek(wks[0]) + ' to ' + fmtWeek(wks[wks.length - 1]) + '</span></div>';
+
+    html += '<div class="stat-cards">';
+    html += scardHtml(fmt(freeNext) + ' d', 'Free to book next week',
+      (vis.length - fullyBookedNext) + ' of ' + vis.length + ' people have room',
+      freeNext > 0 ? 'good' : 'warn', '');
+    html += scardHtml(bookedNextPct + '%', 'Booked next week',
+      fmt(weekLoad(nextW)) + ' of ' + fmt(cap) + ' d', bookedNextPct > 100 ? 'warn' : '', '');
+    html += scardHtml(crunch ? fmtWeek(crunch) : 'none', 'First crunch week',
+      crunch ? 'load reaches 90% of capacity' : 'no week over 90% in horizon',
+      crunch ? 'warn' : 'good', '');
+    html += scardHtml(String(notPlanned.length), 'Not planned next week',
+      notPlanned.length ? 'plans may be incomplete' : 'everyone has filled in',
+      notPlanned.length ? '' : 'good', notPlanned.length ? ' id="kpi-np"' : '');
+    html += '</div>';
+    if (state.showNP && notPlanned.length) {
+      html += '<div class="namechips" id="np-list">' + notPlanned.map(n => '<span>' + esc(n) + '</span>').join('') + '</div>';
+    }
+
+    html += '<div class="chart-card"><h3>Team load by week</h3>' +
+      '<p class="csub">Planned days vs capacity (' + fmt(cap) + ' d/week). Hover a column for the free days that week.</p>' +
+      weeklyChart(wks, loads, cap, avgLoad) + '</div>';
+
+    // ---- project section ----
+    const pvaDisabled = !hasActuals;
+    html += '<div class="chart-card"><h3>Projects</h3>';
+    html += '<div class="proj-filters">';
+    html += '<button class="stat-h-chip mode-chip' + (state.projMode === 'forecast' ? ' on' : '') + '" data-mode="forecast">Forecast</button>';
+    html += '<button class="stat-h-chip mode-chip' + (state.projMode === 'pva' ? ' on' : '') + '" data-mode="pva"' + (pvaDisabled ? ' disabled title="Connect the timesheet actuals first"' : '') + '>Plan vs actual</button>';
+    if (state.projMode === 'pva') {
+      html += '<span class="lbl">Period:</span>';
+      [{ k: 1, t: 'Last week' }, { k: 4, t: '4 wks' }, { k: 8, t: '8 wks' }, { k: 'all', t: 'All' }].forEach(o => {
+        html += '<button class="stat-h-chip' + (state.pvaPeriod === o.k ? ' on' : '') + '" data-pvap="' + o.k + '">' + o.t + '</button>';
+      });
     }
     html += '</div>';
+    html += '<div class="proj-filters">';
+    [{ k: '', t: 'All' }, { k: 'sprint', t: 'Sprint' }, { k: 'regie', t: 'Régie' }, { k: 'adhoc', t: 'Ad-hoc' }, { k: 'autre', t: 'Interne' }].forEach(o => {
+      html += '<button class="stat-h-chip' + (state.projType === o.k ? ' on' : '') + '" data-ptype="' + o.k + '">' + o.t + '</button>';
+    });
+    html += '<input type="text" id="proj-search" placeholder="Search a project" value="' + esc(state.projSearch) + '">';
+    html += '<select id="proj-sort">' +
+      '<option value="days"' + (state.projSort === 'days' ? ' selected' : '') + '>Sort: planned</option>' +
+      (state.projMode === 'pva' ? '<option value="delta"' + (state.projSort === 'delta' ? ' selected' : '') + '>Sort: biggest gap</option>' : '') +
+      '<option value="name"' + (state.projSort === 'name' ? ' selected' : '') + '>Sort: name</option>' +
+      '</select>';
+    html += '</div>';
 
-    html += '<div class="chart-card"><h3>Planned vs actual, by project</h3>';
-    html += hasActuals
-      ? '<p class="csub">Matched by project code. Value column: planned / actual (difference). ' +
-        '"No plan" = logged but not planned; "no actual" = planned but nothing logged yet.</p>'
-      : '<p class="csub">Planned days (capacity) per project. Actual (timesheet) shows here once the ' +
-        'consolidated sheet is connected.</p>';
-    html += pvaBars(rows, hasActuals);
+    // pva mini-KPIs
+    if (state.projMode === 'pva' && hasActuals) {
+      const rows = projectRowsFor('pva');
+      const tp = rows.reduce((a, r) => a + r.planned, 0);
+      const ta = rows.reduce((a, r) => a + r.actual, 0);
+      const acc = tp > 0 ? Math.round((ta / tp) * 100) : 0;
+      const overCount = rows.filter(r => r.actual - r.planned > 0.5).length;
+      const noPlanDays = rows.filter(r => !r.hasPlan).reduce((a, r) => a + r.actual, 0);
+      html += '<div class="stat-cards">';
+      html += scardHtml(tp > 0 ? acc + '%' : 'n/a', 'Plan accuracy', tp > 0 ? fmt(ta) + ' d done of ' + fmt(tp) + ' d planned' : 'no plan in this period',
+        acc > 115 || (tp > 0 && acc < 70) ? 'warn' : 'good', '');
+      html += scardHtml(String(overCount), 'Projects over plan', 'actual exceeds plan by 0.5 d+', overCount ? 'warn' : 'good', '');
+      html += scardHtml(fmt(noPlanDays) + ' d', 'Logged without a plan', 'time on projects never planned', noPlanDays > 0.5 ? 'warn' : 'good', '');
+      html += '</div>';
+    }
+
+    html += '<div id="proj-bars">' + projBarsHtml() + '</div>';
     html += '</div>';
 
     if (!hasActuals) {
-      html += '<div class="stats-note"><b>Actual from the timesheet is not connected yet.</b> ' +
-        'Add the reader to Code.gs so the capacity endpoint returns actuals, and these bars fill in automatically.</div>';
+      html += '<div class="stats-note"><b>Plan vs actual is off:</b> the timesheet actuals are not returned by the backend yet. ' +
+        'Add the reader + the one-line change in Code.gs and this becomes available.</div>';
     }
     return html;
+  }
+
+  function rebindProjBars() {
+    document.querySelectorAll('#proj-bars .hbar.clickable').forEach(el => {
+      el.addEventListener('click', () => {
+        const c = el.dataset.code;
+        if (state.statsOpen[c]) delete state.statsOpen[c];
+        else state.statsOpen[c] = true;
+        const box = document.getElementById('proj-bars');
+        if (box) { box.innerHTML = projBarsHtml(); rebindProjBars(); }
+      });
+    });
+  }
+
+  function wireStats() {
+    document.querySelectorAll('.stat-h-chip[data-h]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const h = btn.dataset.h;
+        state.statHorizon = (h === 'all') ? 'all' : parseInt(h, 10);
+        render();
+      });
+    });
+    document.querySelectorAll('.mode-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.hasAttribute('disabled')) return;
+        state.projMode = btn.dataset.mode;
+        if (state.projMode !== 'pva' && state.projSort === 'delta') state.projSort = 'days';
+        render();
+      });
+    });
+    document.querySelectorAll('.stat-h-chip[data-pvap]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const k = btn.dataset.pvap;
+        state.pvaPeriod = (k === 'all') ? 'all' : parseInt(k, 10);
+        render();
+      });
+    });
+    document.querySelectorAll('.stat-h-chip[data-ptype]').forEach(btn => {
+      btn.addEventListener('click', () => { state.projType = btn.dataset.ptype; render(); });
+    });
+    const np = document.getElementById('kpi-np');
+    if (np) np.addEventListener('click', () => { state.showNP = !state.showNP; render(); });
+    const search = document.getElementById('proj-search');
+    if (search) search.addEventListener('input', () => {
+      state.projSearch = search.value;
+      const box = document.getElementById('proj-bars');
+      if (box) { box.innerHTML = projBarsHtml(); rebindProjBars(); }
+    });
+    const sortSel = document.getElementById('proj-sort');
+    if (sortSel) sortSel.addEventListener('change', () => {
+      state.projSort = sortSel.value;
+      const box = document.getElementById('proj-bars');
+      if (box) { box.innerHTML = projBarsHtml(); rebindProjBars(); }
+    });
+    rebindProjBars();
   }
 
   function wireContent() {
@@ -967,13 +1209,7 @@
     document.querySelectorAll('.avail-week-chip').forEach(btn => {
       btn.addEventListener('click', () => { state.availWeek = btn.dataset.week; render(); });
     });
-    document.querySelectorAll('.stat-h-chip').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const h = btn.dataset.h;
-        state.statHorizon = (h === 'all') ? 'all' : parseInt(h, 10);
-        render();
-      });
-    });
+    if (state.view === 'stats') wireStats();
   }
 
   // ---------- people filter ----------
