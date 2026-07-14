@@ -1182,6 +1182,18 @@
       [{ k: 1, t: 'Last week' }, { k: 4, t: '4 wks' }, { k: 8, t: '8 wks' }, { k: 'all', t: 'All' }].forEach(o => {
         html += '<button class="stat-h-chip' + (state.pvaPeriod === o.k ? ' on' : '') + '" data-pvap="' + o.k + '">' + o.t + '</button>';
       });
+      // resolved window: the actual weeks summed, after clamping to the data cutoff
+      const pw = pastWeeksList();
+      let range;
+      if (pw.length === 0) {
+        range = 'no completed weeks with data yet';
+      } else {
+        const asked = (state.pvaPeriod === 'all') ? pw.length : state.pvaPeriod;
+        range = fmtWeek(pw[0]) + ' \u2192 ' + fmtWeek(pw[pw.length - 1]) +
+          ' (' + pw.length + ' wk' + (pw.length > 1 ? 's' : '') + ')' +
+          (asked > pw.length ? ', limited by available data' : '');
+      }
+      html += '<span class="meta" style="margin-left:auto">' + esc(range) + '</span>';
     } else {
       html += horizonChips('forecastHorizon');
     }
