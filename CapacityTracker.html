@@ -865,6 +865,18 @@
     return '<div class="wchart"><div class="wplot">' + cols + capLine + avgLine + '</div><div class="wlabels">' + labs + '</div></div>';
   }
 
+  // Classify a project by its [Prefix] tag. Maintenance counts as regie
+  // (same time-and-materials family); unknown prefixes fall back to autre.
+  function projectType(name) {
+    const n = String(name || '').toLowerCase();
+    const m = n.match(/^\s*\[([^\]]*)\]/);
+    const tag = m ? m[1].trim() : '';
+    if (tag.indexOf('sprint') !== -1) return 'sprint';
+    if (tag.indexOf('gie') !== -1 || tag.indexOf('regie') !== -1 || tag.indexOf('maintenance') !== -1) return 'regie';
+    if (tag.indexOf('ad') === 0 || tag.indexOf('adhoc') !== -1 || tag.indexOf('ad-hoc') !== -1) return 'adhoc';
+    return 'autre';
+  }
+
   function projectCode(name) {
     if (!name) return '';
     var s = String(name).trim();
@@ -1050,13 +1062,17 @@
     const hasActuals = (state.actuals || []).length > 0;
 
     // ---- forward KPIs ----
-    let freeNext = 0, fullyBookedNext = 0;
+    let freeNext = 0, fullyBookedNext = 0, withRoom = 0;
     const notPlanned = [];
     vis.forEach(p => {
+      if (!hasFilled(p.email, nextW)) { notPlanned.push(p.name); return; }
       const t = cellTotal(p.email, nextW);
-      freeNext += Math.max(0, PERSON_WEEK_CAPACITY - t);
-      if (t >= PERSON_WEEK_CAPACITY - 0.001) fullyBookedNext++;
-      if (!hasFilled(p.email, nextW)) notPlanned.push(p.name);
+      const av = cellAvail(p.email, nextW);
+      if (av === 'Congé' && t <= 0) { fullyBookedNext++; return; }   // on leave: not bookable
+      const free = Math.max(0, PERSON_WEEK_CAPACITY - t);
+      freeNext += free;
+      if (free > 0.001) withRoom++;
+      else fullyBookedNext++;
     });
     const loads = wks.map(w => weekLoad(w));
     const avgLoad = wks.length ? loads.reduce((a, b) => a + b, 0) / wks.length : 0;
@@ -1077,7 +1093,8 @@
 
     html += '<div class="stat-cards">';
     html += scardHtml(fmt(freeNext) + ' d', 'Free to book next week',
-      (vis.length - fullyBookedNext) + ' of ' + vis.length + ' people have room',
+      withRoom + ' of ' + vis.length + ' people have room' +
+      (notPlanned.length ? ', ' + notPlanned.length + ' unknown (not filled in)' : ''),
       freeNext > 0 ? 'good' : 'warn', '');
     html += scardHtml(bookedNextPct + '%', 'Booked next week',
       fmt(weekLoad(nextW)) + ' of ' + fmt(cap) + ' d', bookedNextPct > 100 ? 'warn' : '', '');
