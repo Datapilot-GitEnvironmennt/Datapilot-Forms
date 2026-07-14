@@ -585,7 +585,7 @@
   const state = {
     entries: [], people: [], projects: [],
     hidden: new Set(lsGetJson(LS_HIDDEN, [])),
-    weekCount: 2, view: 'grid', availWeek: '', statHorizon: 8, actuals: [],
+    weekCount: 2, view: 'grid', availWeek: '', loadHorizon: 8, forecastHorizon: 8, actuals: [],
     projMode: 'forecast', projType: '', projSearch: '', projSort: 'days',
     pvaPeriod: 4, statsOpen: {}, showNP: false
   };
@@ -840,9 +840,9 @@
   }
 
   // ---------- STATS / PROJECTION (dashboard) ----------
-  function statsHorizonWeeks() {
+  function statsHorizonWeeks(horizon) {
     const cur = currentMondayIso();
-    if (state.statHorizon === 'all') {
+    if (horizon === 'all') {
       const vis = new Set(visiblePeople().map(p => norm(p.email)));
       let max = cur;
       state.entries.forEach(e => {
@@ -853,8 +853,19 @@
       return out;
     }
     const out = []; let w = cur;
-    for (let i = 0; i < state.statHorizon; i++) { out.push(w); w = addWeeks(w, 1); }
+    for (let i = 0; i < horizon; i++) { out.push(w); w = addWeeks(w, 1); }
     return out;
+  }
+
+  // A row of horizon chips bound to a given state field.
+  function horizonChips(field) {
+    const cur = state[field];
+    const opts = [{ k: 2, t: '2 wks' }, { k: 4, t: '4 wks' }, { k: 8, t: '8 wks' }, { k: 13, t: '3 mois' }, { k: 'all', t: 'All planned' }];
+    let h = '<span class="lbl">Horizon:</span>';
+    opts.forEach(o => {
+      h += '<button class="stat-h-chip' + (cur === o.k ? ' on' : '') + '" data-hfield="' + field + '" data-h="' + o.k + '">' + o.t + '</button>';
+    });
+    return h;
   }
 
   function pastWeeksList() {
@@ -973,7 +984,7 @@
         weeks: wks
       }));
     }
-    const wks = statsHorizonWeeks();
+    const wks = statsHorizonWeeks(state.forecastHorizon);
     const P = plannedAgg(wks);
     return Object.keys(P).map(c => ({
       code: c, name: P[c].name, planned: P[c].planned, actual: 0,
@@ -1093,7 +1104,7 @@
   }
 
   function renderStats() {
-    const wks = statsHorizonWeeks();
+    const loadWks = statsHorizonWeeks(state.loadHorizon);
     const vis = visiblePeople();
     const cap = weekCapacity();
     const cur = currentMondayIso();
@@ -1113,22 +1124,15 @@
       if (free > 0.001) withRoom++;
       else fullyBookedNext++;
     });
-    const loads = wks.map(w => weekLoad(w));
-    const avgLoad = wks.length ? loads.reduce((a, b) => a + b, 0) / wks.length : 0;
+    const loads = loadWks.map(w => weekLoad(w));
+    const avgLoad = loadWks.length ? loads.reduce((a, b) => a + b, 0) / loadWks.length : 0;
     let crunch = '';
-    for (let i = 0; i < wks.length; i++) {
-      if (cap && loads[i] / cap >= 0.9) { crunch = wks[i]; break; }
+    for (let i = 0; i < loadWks.length; i++) {
+      if (cap && loads[i] / cap >= 0.9) { crunch = loadWks[i]; break; }
     }
     const bookedNextPct = cap ? Math.round((weekLoad(nextW) / cap) * 100) : 0;
 
     let html = '';
-    // horizon chips
-    const opts = [{ k: 2, t: '2 wks' }, { k: 4, t: '4 wks' }, { k: 8, t: '8 wks' }, { k: 13, t: '3 mois' }, { k: 'all', t: 'All planned' }];
-    html += '<div class="stats-head"><span class="lbl">Horizon:</span>';
-    opts.forEach(o => {
-      html += '<button class="stat-h-chip' + (state.statHorizon === o.k ? ' on' : '') + '" data-h="' + o.k + '">' + o.t + '</button>';
-    });
-    html += '<span class="meta" style="margin-left:auto">' + fmtWeek(wks[0]) + ' to ' + fmtWeek(wks[wks.length - 1]) + '</span></div>';
 
     html += '<div class="stat-cards">';
     html += scardHtml(fmt(freeNext) + ' d', 'Free to book next week',
@@ -1157,10 +1161,11 @@
     }
 
     html += '<div class="chart-card"><h3>Team load by week' +
-      infoIcon('Planned days per week, all visible people summed. Dashed line = team capacity, dotted = average. <b>Red column</b> = overbooked week, green = exactly full. Hover a column for the free days.<br><b>Needs:</b> plans filled over the horizon; empty future weeks show as low load, not as free-for-sure.',
-               'everyone, for the medium-term picture; No\u00e9mie / Madou for load balancing.') + '</h3>' +
+      infoIcon('Planned days per week, all visible people summed. Dashed line = team capacity, dotted = average. <b>Red column</b> = overbooked week, green = exactly full. Hover a column for the free days.<br><b>Needs:</b> plans filled over the horizon; empty future weeks show as low load, not as free-for-sure.') + '</h3>' +
+      '<div class="stats-head" style="margin:2px 0 10px">' + horizonChips('loadHorizon') +
+        '<span class="meta" style="margin-left:auto">' + fmtWeek(loadWks[0]) + ' to ' + fmtWeek(loadWks[loadWks.length - 1]) + '</span></div>' +
       '<p class="csub">Planned days vs capacity (' + fmt(cap) + ' d/week). Hover a column for the free days that week.</p>' +
-      weeklyChart(wks, loads, cap, avgLoad) + '</div>';
+      weeklyChart(loadWks, loads, cap, avgLoad) + '</div>';
 
     // ---- project section ----
     const pvaDisabled = !hasActuals;
@@ -1175,6 +1180,8 @@
       [{ k: 1, t: 'Last week' }, { k: 4, t: '4 wks' }, { k: 8, t: '8 wks' }, { k: 'all', t: 'All' }].forEach(o => {
         html += '<button class="stat-h-chip' + (state.pvaPeriod === o.k ? ' on' : '') + '" data-pvap="' + o.k + '">' + o.t + '</button>';
       });
+    } else {
+      html += horizonChips('forecastHorizon');
     }
     html += '</div>';
     html += '<div class="proj-filters">';
@@ -1234,10 +1241,10 @@
   }
 
   function wireStats() {
-    document.querySelectorAll('.stat-h-chip[data-h]').forEach(btn => {
+    document.querySelectorAll('.stat-h-chip[data-hfield]').forEach(btn => {
       btn.addEventListener('click', () => {
         const h = btn.dataset.h;
-        state.statHorizon = (h === 'all') ? 'all' : parseInt(h, 10);
+        state[btn.dataset.hfield] = (h === 'all') ? 'all' : parseInt(h, 10);
         render();
       });
     });
