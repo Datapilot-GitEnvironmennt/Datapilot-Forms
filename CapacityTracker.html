@@ -501,6 +501,11 @@
         <div class="l">Team load this week</div>
         <div class="bar"><i id="bar-days" style="width:0%"></i></div>
       </div>
+      <div class="hstat">
+        <div class="n" id="stat-days-next">0</div>
+        <div class="l">Team load next week</div>
+        <div class="bar"><i id="bar-days-next" style="width:0%"></i></div>
+      </div>
     </div>
   </header>
 
@@ -574,6 +579,7 @@
   const STEP = 0.5;
   const OTHER_PROJECT = 'Autre / Interne';
   const TEAM_EVENT_PROJECT = 'Événement d\'équipe';
+  const LEAVE_PROJECT = 'Congé';
   const AVAIL = [
     { key: 'Disponible', emoji: '🟢' },
     { key: 'Partiel',    emoji: '🟡' },
@@ -718,6 +724,16 @@
     const bd = document.getElementById('bar-days');
     bd.style.width = Math.min(dPct, 100) + '%';
     bd.classList.toggle('hot', days > cap + 0.001);
+
+    // next week: same capacity denominator, forward-looking load
+    const nextWk = addWeeks(wk, 1);
+    const daysNext = weekLoad(nextWk);
+    const nPct = cap ? Math.round((daysNext / cap) * 100) : 0;
+    document.getElementById('stat-days-next').textContent = fmt(daysNext) + ' / ' + fmt(cap) + ' d';
+    const bn = document.getElementById('bar-days-next');
+    bn.style.width = Math.min(nPct, 100) + '%';
+    bn.classList.toggle('hot', daysNext > cap + 0.001);
+
     document.getElementById('legend-max').textContent = PERSON_WEEK_CAPACITY;
   }
 
@@ -1476,7 +1492,11 @@
       oEvent.value = TEAM_EVENT_PROJECT; oEvent.textContent = '📅 ' + TEAM_EVENT_PROJECT;
       if (line.project === TEAM_EVENT_PROJECT) oEvent.selected = true;
       sel.appendChild(oEvent);
-      if (line.project && line.project !== OTHER_PROJECT && line.project !== TEAM_EVENT_PROJECT && state.projects.indexOf(line.project) === -1) {
+      const oLeave = document.createElement('option');
+      oLeave.value = LEAVE_PROJECT; oLeave.textContent = '⚪ ' + LEAVE_PROJECT;
+      if (line.project === LEAVE_PROJECT) oLeave.selected = true;
+      sel.appendChild(oLeave);
+      if (line.project && line.project !== OTHER_PROJECT && line.project !== TEAM_EVENT_PROJECT && line.project !== LEAVE_PROJECT && state.projects.indexOf(line.project) === -1) {
         const oKeep = document.createElement('option');
         oKeep.value = line.project; oKeep.textContent = line.project + ' (inactive)';
         oKeep.selected = true;
