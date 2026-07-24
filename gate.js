@@ -1,5 +1,5 @@
 /* =====================================================================
-   Datapilot access gate (shared) — team password, verified by backend.
+   Datapilot access gate (shared): team password, verified by backend.
    Include on every page BEFORE the page's main <script>:
 
      <script src="./gate.js"></script>
@@ -28,7 +28,7 @@
   };
   window.dpAuthFailed = function () {
     try { localStorage.removeItem(STORE); } catch (e) {}
-    whenBodyReady(function () { showGate(''); });
+    whenBodyReady(function () { showGate('Session expired or password changed - please enter it again.'); });
   };
 
   function whenBodyReady(fn) {
@@ -68,7 +68,7 @@
       '<input id="dp-gate-pw" type="password" placeholder="Team password" autocomplete="current-password">' +
       '<button id="dp-gate-btn" type="button">Enter</button>' +
       '<div class="err" id="dp-gate-err"></div>' +
-      '<div class="hint">Ask GM for the password.</div>' +
+      '<div class="hint">Ask your project lead for the password.</div>' +
       '</div>';
     document.body.appendChild(overlay);
     setErr(msg);
@@ -97,6 +97,39 @@
     btn.addEventListener('click', tryLogin);
     pw.addEventListener('keydown', function (e) { if (e.key === 'Enter') tryLogin(); });
     setTimeout(function () { pw.focus(); }, 50);
+  }
+
+  /* ---------------------------------------------------------------
+     Confidentiality notice, appended at the bottom of every page that
+     includes gate.js. One place to edit the wording for the whole
+     portal. Scoped styles, injected once.
+     --------------------------------------------------------------- */
+  function addNotice() {
+    if (document.getElementById('dp-notice')) return;   // never twice
+    var f = document.createElement('div');
+    f.id = 'dp-notice';
+    f.innerHTML =
+      '<style>' +
+      '#dp-notice{max-width:1280px;margin:28px auto 0;padding:14px 16px 22px;' +
+      'border-top:1px solid #EAE6DA;text-align:center;' +
+      'font-family:Poppins,-apple-system,BlinkMacSystemFont,sans-serif}' +
+      '#dp-notice .dp-n-t{font-size:11px;font-weight:700;letter-spacing:1.2px;' +
+      'text-transform:uppercase;color:#0F2A3D}' +
+      '#dp-notice .dp-n-t i{font-style:normal;color:#F5A623}' +
+      '#dp-notice p{margin:5px auto 0;max-width:640px;font-size:11px;line-height:1.55;color:#6B7280}' +
+      '@media print{#dp-notice{page-break-inside:avoid}}' +
+      '</style>' +
+      '<div class="dp-n-t"><i>&#9679;</i> Confidentiel \u00b7 Propri\u00e9t\u00e9 de Datapilot</div>' +
+      '<p>Les informations saisies et affich\u00e9es sur cette page sont internes \u00e0 Datapilot. ' +
+      'Elles ne doivent pas \u00eatre copi\u00e9es, diffus\u00e9es ou partag\u00e9es en dehors de l\u2019entreprise ' +
+      'sans autorisation.</p>';
+    document.body.appendChild(f);
+  }
+  // wait for the full page so the notice really ends up last
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', addNotice);
+  } else {
+    addNotice();
   }
 
   if (!window.dpKey()) {
