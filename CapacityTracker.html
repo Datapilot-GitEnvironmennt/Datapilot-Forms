@@ -900,9 +900,9 @@
     return state.pvaPeriod;
   }
 
-  // The list of weeks summed in Plan vs actual. Now INCLUDES the current,
-  // in-progress week (so a Friday still shows this week, partially logged).
-  // The last entry can be the current week; callers mark it "in progress".
+  // The list of weeks summed in Plan vs actual: COMPLETED weeks only
+  // (the current, in-progress week is excluded, so a full plan is never
+  // compared against a half-logged week). Honors the custom week count.
   function pastWeeksList() {
     const cur = currentMondayIso();
     let minA = '';
@@ -912,16 +912,13 @@
     let start;
     if (asked === 'all') start = minA;
     else {
-      // asked counts back from AND includes the current week
-      start = addWeeks(cur, -(asked - 1));
+      start = addWeeks(cur, -asked);
       if (start < minA) start = minA;
     }
     const out = []; let w = start, g = 0;
-    while (w <= cur && g < 300) { out.push(w); w = addWeeks(w, 1); g++; }
+    while (w < cur && g < 300) { out.push(w); w = addWeeks(w, 1); g++; }
     return out;
   }
-
-  function isCurrentWeek(iso) { return iso === currentMondayIso(); }
 
   function weekBadgeShort(i) { return i === 0 ? 'now' : '+' + i; }
 
@@ -1081,8 +1078,7 @@
         if (!p && !a) return;
         const d = a - p;
         const dcls = d > 0.001 ? 'dl-over' : (d < -0.001 ? 'dl-under' : '');
-        const wip = isCurrentWeek(w) ? ' <span class="pva-tag">in progress</span>' : '';
-        h += '<tr><td>' + fmtWeek(w) + wip + '</td><td class="num">' + fmt(p) + '</td><td class="num">' + fmt(a) +
+        h += '<tr><td>' + fmtWeek(w) + '</td><td class="num">' + fmt(p) + '</td><td class="num">' + fmt(a) +
              '</td><td class="num ' + dcls + '">' + (d > 0 ? '+' : '') + fmt(d) + '</td></tr>';
       });
       h += '</table>';
@@ -1218,7 +1214,7 @@
     html += '<div class="stats-head" style="margin:2px 0 12px">';
     if (state.projMode === 'pva') {
       html += '<span class="lbl">Period:</span>';
-      [{ k: 1, t: '1 wk' }, { k: 4, t: '4 wks' }, { k: 8, t: '8 wks' }, { k: 12, t: '12 wks' }, { k: 26, t: '26 wks' }, { k: 'all', t: 'All' }].forEach(o => {
+      [{ k: 1, t: 'Last week' }, { k: 4, t: '4 wks' }, { k: 8, t: '8 wks' }, { k: 12, t: '12 wks' }, { k: 26, t: '26 wks' }, { k: 'all', t: 'All' }].forEach(o => {
         html += '<button class="stat-h-chip' + (state.pvaPeriod === o.k ? ' on' : '') + '" data-pvap="' + o.k + '">' + o.t + '</button>';
       });
       // custom N-weeks box
@@ -1230,12 +1226,10 @@
       const pw = pastWeeksList();
       let range;
       if (pw.length === 0) {
-        range = 'no weeks with data yet';
+        range = 'no completed weeks with data yet';
       } else {
         const asked = pvaWeeksAsked();
-        const endsNow = isCurrentWeek(pw[pw.length - 1]);
         range = fmtWeek(pw[0]) + ' \u2192 ' + fmtWeek(pw[pw.length - 1]) +
-          (endsNow ? ' (in progress)' : '') +
           ' \u00b7 ' + pw.length + ' wk' + (pw.length > 1 ? 's' : '') +
           (asked !== 'all' && asked > pw.length ? ', limited by data' : '');
       }
