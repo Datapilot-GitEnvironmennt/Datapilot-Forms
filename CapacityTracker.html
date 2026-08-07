@@ -290,7 +290,6 @@
   .wcol-val { position:absolute; top:-15px; left:0; right:0; text-align:center; font-size:10px; font-weight:700; color:var(--navy); }
   .wcol.thin { min-width:0; }
   .wcol-bar.future { background:#C7D6DD; }
-  .wcol-sec { position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:52%; background:var(--navy); border-radius:5px 5px 0 0; z-index:2; opacity:0.85; }
   .wlab.thin { font-size:8px; overflow:hidden; white-space:nowrap; }
   .stats-head input[type="date"] { padding:6px 9px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:12px; color:var(--navy); }
   .stats-head input[type="date"]:focus { outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(63,166,184,0.15); }
@@ -692,6 +691,24 @@
     visiblePeople().forEach(p => { d += cellTotal(p.email, week); });
     return d;
   }
+  // Non-client planned categories, excluded from the client-work load chart.
+  function isNonClientProject(name) {
+    return name === OTHER_PROJECT || name === TEAM_EVENT_PROJECT || name === LEAVE_PROJECT;
+  }
+  // Planned CLIENT days for a week (visible people), excluding Conge /
+  // Team event / Autre-Interne lines.
+  function weekClientLoad(week) {
+    const vis = new Set(visiblePeople().map(p => norm(p.email)));
+    let d = 0;
+    state.entries.forEach(e => {
+      if (!vis.has(norm(e.personEmail))) return;
+      if (e.week !== week) return;
+      if (!(e.days > 0)) return;
+      if (isNonClientProject(e.project || OTHER_PROJECT)) return;
+      d += e.days;
+    });
+    return d;
+  }
   function weekCapacity() { return visiblePeople().length * PERSON_WEEK_CAPACITY; }
 
   // Suggest an availability from the planned days (user can override).
@@ -974,9 +991,9 @@
     const rows = wks.map(w => {
       if (mode === 'actual') {
         const a = actualWeekDays(w);
-        return { w: w, past: weekIsPast(w), primary: a.all, secondary: a.billable, hasData: (a.all > 0) };
+        return { w: w, past: weekIsPast(w), primary: a.billable, secondary: null, hasData: (a.all > 0) };
       }
-      const v = weekLoad(w);
+      const v = weekClientLoad(w);
       return { w: w, past: weekIsPast(w), primary: v, secondary: null, hasData: true };
     });
     const vals = rows.map(r => Math.max(r.primary, r.secondary || 0));
@@ -998,19 +1015,15 @@
       let tip;
       if (mode === 'actual') {
         tip = fmtWeek(r.w) + (r.past ? '' : ' (future - no actual)') + ': ' +
-              'logged ' + fmt(r.primary) + ' d, client ' + fmt(r.secondary || 0) + ' d' +
-              (cap ? ' / cap ' + fmt(cap) + ' d' : '');
+              'client work logged ' + fmt(r.primary) + ' d' + (cap ? ' / cap ' + fmt(cap) + ' d' : '');
       } else {
-        tip = fmtWeek(r.w) + ': ' + fmt(r.primary) + ' / ' + fmt(cap) + ' d (' + util + '%), free ' + fmt(Math.max(0, cap - r.primary)) + ' d';
+        tip = fmtWeek(r.w) + ': client work planned ' + fmt(r.primary) + ' / ' + fmt(cap) + ' d (' + util + '%)';
       }
-      // secondary (client-only) inner bar, actual mode
-      const secBar = (mode === 'actual' && r.secondary != null && r.secondary > 0)
-        ? '<div class="wcol-sec" style="height:' + Math.max(0, (r.secondary / maxVal) * 100) + '%"></div>' : '';
       cols += '<div class="wcol' + (thin ? ' thin' : '') + '">' +
         '<div class="wtip">' + tip + '</div>' +
         '<div class="wcol-bar ' + cls + '" style="height:' + pPct + '%">' +
           (thin ? '' : '<span class="wcol-val">' + (r.hasData ? fmt(r.primary) : '') + '</span>') +
-        '</div>' + secBar +
+        '</div>' +
         '</div>';
       const badge = r.w === cur ? 'now' : (r.past ? '' : '+' + i);
       labs += '<div class="wlab' + (thin ? ' thin' : '') + '">' + (badge ? '<b>' + badge + '</b>' : '') + fmtWeek(r.w) + '</div>';
@@ -1304,7 +1317,7 @@
     const lWks = loadWeekWindow();
     const usingRange = !!(state.loadFrom && state.loadTo);
     html += '<div class="chart-card"><h3>Team load by week' +
-      infoIcon('Planned (capacity) or actual (timesheet) days per week, team-wide - past and future. <b>Actual</b> shows two bars: all logged time and client-only (non-billing excluded). The cap line appears only on current/future weeks; the average line spans weeks that have data. Use it to spot peak and low seasons.<br><b>Needs:</b> for actual, the timesheet connected; past weeks use today\'s headcount for the average, so treat it as indicative.') +
+      infoIcon('<b>Client work only</b>, team-wide, per week - past and future. Planned excludes Cong\u00e9, team events and internal time; actual excludes non-billing. Toggle <b>Planned</b> (capacity) vs <b>Actual</b> (timesheet). Cap line shows on current/future weeks only; the average spans weeks with data. Use it to spot peak and low seasons.<br><b>Needs:</b> for actual, the timesheet connected; past weeks use today\'s headcount for the average, so treat it as indicative.') +
       '<span class="h3-modes">' +
         '<button class="stat-h-chip mode-chip' + (state.loadMode === 'planned' ? ' on' : '') + '" data-lmode="planned">Planned</button>' +
         '<button class="stat-h-chip mode-chip' + (state.loadMode === 'actual' ? ' on' : '') + '" data-lmode="actual"' + (hasActuals ? '' : ' disabled title="Connect the timesheet actuals first"') + '>Actual</button>' +
@@ -1326,10 +1339,10 @@
       (usingRange ? '<button class="stat-h-chip" id="load-clear">clear</button>' : '') +
       '<span class="meta" style="margin-left:auto">' + fmtWeek(lWks[0]) + ' \u2192 ' + fmtWeek(lWks[lWks.length - 1]) + ' \u00b7 ' + lWks.length + ' wk' + (lWks.length > 1 ? 's' : '') + '</span>';
     html += '</div>';
-    html += '<p class="csub">' +
+    html += '<p class="csub"><b>Client work only</b> (excludes Cong\u00e9, team events, internal / non-billing). ' +
       (state.loadMode === 'actual'
-        ? 'Actual days logged (timesheet). Tall bar = all logged time, inner bar = client work only. Cap line shows on current/future weeks only.'
-        : 'Planned days vs capacity (' + fmt(cap) + ' d/week). Hover a column for the free days that week.') +
+        ? 'Actual client days logged in the timesheet, per week.'
+        : 'Planned client days vs capacity (' + fmt(cap) + ' d/week).') +
       '</p>';
     // fix the chip active state (data-on set above -> apply .on)
     html = html.replace(/data-on="1"/g, 'style="background:var(--navy);color:white;border-color:var(--navy)"');
