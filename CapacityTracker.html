@@ -336,6 +336,11 @@
     font-family:inherit; font-size:12px; background:white; color:var(--navy); font-weight:600; cursor:pointer;
   }
   .mode-chip[disabled] { opacity:0.45; cursor:not-allowed; }
+  .pva-custom { display:inline-flex; align-items:center; gap:5px; }
+  .pva-custom input { width:52px; padding:6px 8px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:12px; text-align:center; font-weight:600; color:var(--navy); }
+  .pva-custom input:focus { outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(63,166,184,0.15); }
+  .pva-custom.on input { border-color:var(--navy); }
+  .pva-custom .lbl { font-size:11px; color:var(--muted); font-weight:600; }
   .hbar.clickable { cursor:pointer; border-radius:8px; padding:6px 8px; margin:0 -8px; }
   .hbar.clickable:hover { background:#F0F7FA; }
   .hbar .caret { display:inline-block; font-size:9px; color:var(--muted); margin-right:6px; transition:transform .15s; }
@@ -594,7 +599,7 @@
     hidden: new Set(lsGetJson(LS_HIDDEN, [])),
     weekCount: 2, view: 'grid', availWeek: '', loadHorizon: 8, forecastHorizon: 8, actuals: [],
     projMode: 'forecast', projType: '', projSearch: '', projSort: 'days',
-    pvaPeriod: 4, statsOpen: {}, showNP: false
+    pvaPeriod: 4, pvaCustom: 12, statsOpen: {}, showNP: false
   };
 
   const editor = {
@@ -885,21 +890,38 @@
     return h;
   }
 
+  // How many weeks the Period control currently asks for (a number, or 'all').
+  function pvaWeeksAsked() {
+    if (state.pvaPeriod === 'all') return 'all';
+    if (state.pvaPeriod === 'custom') {
+      const n = parseInt(state.pvaCustom, 10);
+      return (isNaN(n) || n < 1) ? 1 : Math.min(n, 260);
+    }
+    return state.pvaPeriod;
+  }
+
+  // The list of weeks summed in Plan vs actual. Now INCLUDES the current,
+  // in-progress week (so a Friday still shows this week, partially logged).
+  // The last entry can be the current week; callers mark it "in progress".
   function pastWeeksList() {
     const cur = currentMondayIso();
     let minA = '';
     (state.actuals || []).forEach(a => { if (a.week && (!minA || a.week < minA)) minA = a.week; });
     if (!minA) return [];
+    const asked = pvaWeeksAsked();
     let start;
-    if (state.pvaPeriod === 'all') start = minA;
+    if (asked === 'all') start = minA;
     else {
-      start = addWeeks(cur, -state.pvaPeriod);
+      // asked counts back from AND includes the current week
+      start = addWeeks(cur, -(asked - 1));
       if (start < minA) start = minA;
     }
     const out = []; let w = start, g = 0;
-    while (w < cur && g < 60) { out.push(w); w = addWeeks(w, 1); g++; }
+    while (w <= cur && g < 300) { out.push(w); w = addWeeks(w, 1); g++; }
     return out;
   }
+
+  function isCurrentWeek(iso) { return iso === currentMondayIso(); }
 
   function weekBadgeShort(i) { return i === 0 ? 'now' : '+' + i; }
 
@@ -1059,7 +1081,8 @@
         if (!p && !a) return;
         const d = a - p;
         const dcls = d > 0.001 ? 'dl-over' : (d < -0.001 ? 'dl-under' : '');
-        h += '<tr><td>' + fmtWeek(w) + '</td><td class="num">' + fmt(p) + '</td><td class="num">' + fmt(a) +
+        const wip = isCurrentWeek(w) ? ' <span class="pva-tag">in progress</span>' : '';
+        h += '<tr><td>' + fmtWeek(w) + wip + '</td><td class="num">' + fmt(p) + '</td><td class="num">' + fmt(a) +
              '</td><td class="num ' + dcls + '">' + (d > 0 ? '+' : '') + fmt(d) + '</td></tr>';
       });
       h += '</table>';
@@ -1195,19 +1218,26 @@
     html += '<div class="stats-head" style="margin:2px 0 12px">';
     if (state.projMode === 'pva') {
       html += '<span class="lbl">Period:</span>';
-      [{ k: 1, t: 'Last week' }, { k: 4, t: '4 wks' }, { k: 8, t: '8 wks' }, { k: 'all', t: 'All' }].forEach(o => {
+      [{ k: 1, t: '1 wk' }, { k: 4, t: '4 wks' }, { k: 8, t: '8 wks' }, { k: 12, t: '12 wks' }, { k: 26, t: '26 wks' }, { k: 'all', t: 'All' }].forEach(o => {
         html += '<button class="stat-h-chip' + (state.pvaPeriod === o.k ? ' on' : '') + '" data-pvap="' + o.k + '">' + o.t + '</button>';
       });
-      // resolved window: the actual weeks summed, after clamping to the data cutoff
+      // custom N-weeks box
+      html += '<span class="pva-custom' + (state.pvaPeriod === 'custom' ? ' on' : '') + '">' +
+        '<button class="stat-h-chip' + (state.pvaPeriod === 'custom' ? ' on' : '') + '" data-pvap="custom">Custom</button>' +
+        '<input type="number" id="pva-custom-n" min="1" max="260" step="1" value="' + esc(String(state.pvaCustom)) + '" title="number of weeks">' +
+        '<span class="lbl">wks</span></span>';
+      // resolved window label, marking the in-progress current week
       const pw = pastWeeksList();
       let range;
       if (pw.length === 0) {
-        range = 'no completed weeks with data yet';
+        range = 'no weeks with data yet';
       } else {
-        const asked = (state.pvaPeriod === 'all') ? pw.length : state.pvaPeriod;
+        const asked = pvaWeeksAsked();
+        const endsNow = isCurrentWeek(pw[pw.length - 1]);
         range = fmtWeek(pw[0]) + ' \u2192 ' + fmtWeek(pw[pw.length - 1]) +
-          ' (' + pw.length + ' wk' + (pw.length > 1 ? 's' : '') + ')' +
-          (asked > pw.length ? ', limited by available data' : '');
+          (endsNow ? ' (in progress)' : '') +
+          ' \u00b7 ' + pw.length + ' wk' + (pw.length > 1 ? 's' : '') +
+          (asked !== 'all' && asked > pw.length ? ', limited by data' : '');
       }
       html += '<span class="meta" style="margin-left:auto">' + esc(range) + '</span>';
     } else {
@@ -1289,10 +1319,26 @@
     document.querySelectorAll('.stat-h-chip[data-pvap]').forEach(btn => {
       btn.addEventListener('click', () => {
         const k = btn.dataset.pvap;
-        state.pvaPeriod = (k === 'all') ? 'all' : parseInt(k, 10);
+        state.pvaPeriod = (k === 'all' || k === 'custom') ? k : parseInt(k, 10);
         render();
       });
     });
+    const customN = document.getElementById('pva-custom-n');
+    if (customN) {
+      const applyCustom = () => {
+        let n = parseInt(customN.value, 10);
+        if (isNaN(n) || n < 1) n = 1;
+        if (n > 260) n = 260;
+        state.pvaCustom = n;
+        state.pvaPeriod = 'custom';
+        render();
+        const again = document.getElementById('pva-custom-n');
+        if (again) { again.focus(); again.select(); }
+      };
+      customN.addEventListener('change', applyCustom);
+      customN.addEventListener('keydown', e => { if (e.key === 'Enter') applyCustom(); });
+      customN.addEventListener('click', e => e.stopPropagation());
+    }
     document.querySelectorAll('.stat-h-chip[data-ptype]').forEach(btn => {
       btn.addEventListener('click', () => { state.projType = btn.dataset.ptype; render(); });
     });
