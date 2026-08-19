@@ -61,6 +61,9 @@
   header.top .header-text h1 { margin: 0 0 6px 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
   header.top .header-text p { margin: 0; font-size: 13px; line-height: 1.5; opacity: 0.85; font-weight: 300; }
   header.top .header-text b { color: var(--amber); font-weight: 600; }
+  header.top .refresh-data { flex-shrink: 0; align-self: flex-start; border: 1px solid rgba(255,255,255,0.35); background: rgba(255,255,255,0.10); color: white; padding: 9px 16px; border-radius: 9px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; letter-spacing: 0.3px; transition: background 0.15s, border-color 0.15s; white-space: nowrap; }
+  header.top .refresh-data:hover { background: rgba(255,255,255,0.20); border-color: var(--amber); }
+  header.top .refresh-data:disabled { opacity: 0.6; cursor: wait; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 22px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
   .card h2 { margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: var(--navy); display: flex; align-items: center; gap: 10px; }
   .card h2::before { content: ''; display: inline-block; width: 4px; height: 18px; background: var(--amber); border-radius: 2px; }
@@ -407,6 +410,7 @@
         Resubmit anytime, the latest submission overrides the previous one for the same week.
       </p>
     </div>
+    <button type="button" id="refresh-data-btn" class="refresh-data" title="Reload projects, team list and FAQ from the Google Sheet">↻ Refresh data</button>
   </header>
   <form id="timesheet-form" autocomplete="off">
     <div class="card">
@@ -627,11 +631,12 @@
       return;
     }
     try {
+      const bust = "&_ts=" + Date.now();
       const [activeResp, allResp, usersResp, faqResp] = await Promise.all([
-        fetch(APPS_SCRIPT_URL + "?action=projects" + dpQ(), { method: "GET" }),
-        fetch(APPS_SCRIPT_URL + "?action=allProjects" + dpQ(), { method: "GET" }),
-        fetch(APPS_SCRIPT_URL + "?action=users" + dpQ(), { method: "GET" }),
-        fetch(APPS_SCRIPT_URL + "?action=faq" + dpQ(), { method: "GET" })
+        fetch(APPS_SCRIPT_URL + "?action=projects" + dpQ() + bust, { method: "GET", cache: "no-store" }),
+        fetch(APPS_SCRIPT_URL + "?action=allProjects" + dpQ() + bust, { method: "GET", cache: "no-store" }),
+        fetch(APPS_SCRIPT_URL + "?action=users" + dpQ() + bust, { method: "GET", cache: "no-store" }),
+        fetch(APPS_SCRIPT_URL + "?action=faq" + dpQ() + bust, { method: "GET", cache: "no-store" })
       ]);
       const activeData = await activeResp.json();
       const allData = await allResp.json();
@@ -658,6 +663,18 @@
     }
     buildBilling();
     populateFaqInline();
+  }
+  // Re-pull projects, team list and FAQ from the sheet without a page reload.
+  // Saves the current draft first so typed hours survive the rebuild.
+  async function refreshData() {
+    const btn = document.getElementById("refresh-data-btn");
+    if (btn) { btn.disabled = true; btn.dataset.label = btn.textContent; btn.textContent = "Refreshing\u2026"; }
+    saveDraft();
+    try {
+      await loadProjects();
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label || "\u21bb Refresh data"; }
+    }
   }
   // ============================================================
   // SHARED DROPDOWN COMPONENT — projects, emails, and ad-hoc tasks
@@ -909,6 +926,7 @@
   emailInput.addEventListener('keydown', (e) => {
     if (dropdownState.input === emailInput) handleDropdownKeyboardNav(e);
   });
+  document.getElementById("refresh-data-btn").addEventListener("click", refreshData);
   function buildBilling() {
     const tbody = document.getElementById("billing-body");
     tbody.innerHTML = "";
