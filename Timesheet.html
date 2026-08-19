@@ -588,7 +588,7 @@
     { name: "[REGIE] Les Bienheureux", type: "regie" },
     { name: "[REGIE] Régie TSE", type: "regie" },
     { name: "[REGIE] TDB Financier Arma Groupe", type: "regie" },
-    { name: "[REGIE] Nos Vies Notre Priorit (SNCF)", type: "regie" }
+    { name: "[REGIE] Nos Vies Notre Priorité (SNCF)", type: "regie" }
   ];
   const STEP = 0.5;
   const TARGET = 40;
@@ -630,37 +630,42 @@
       buildBilling();
       return;
     }
-    try {
-      const bust = "&_ts=" + Date.now();
-      const [activeResp, allResp, usersResp, faqResp] = await Promise.all([
-        fetch(APPS_SCRIPT_URL + "?action=projects" + dpQ() + bust, { method: "GET", cache: "no-store" }),
-        fetch(APPS_SCRIPT_URL + "?action=allProjects" + dpQ() + bust, { method: "GET", cache: "no-store" }),
-        fetch(APPS_SCRIPT_URL + "?action=users" + dpQ() + bust, { method: "GET", cache: "no-store" }),
-        fetch(APPS_SCRIPT_URL + "?action=faq" + dpQ() + bust, { method: "GET", cache: "no-store" })
-      ]);
-      const activeData = await activeResp.json();
-      const allData = await allResp.json();
-      const usersData = await usersResp.json();
-      const faqData = await faqResp.json();
-      if ((activeData && activeData.error === 'unauthorized') ||
-          (usersData && usersData.error === 'unauthorized')) {
-        dpAuthFailed();
-        return;
+    // Cache-buster keeps the browser from serving a stale copy. We do NOT use
+    // cache:"no-store" here: on the Apps Script /exec 302 redirect it can make
+    // the fetch fail, which then dropped everything to the hardcoded fallback.
+    const bust = "&_ts=" + Date.now();
+    // Fetch each endpoint INDEPENDENTLY. With Promise.all, one failing request
+    // (e.g. faq) rejected the whole batch and blanked projects too. Now a
+    // failure in one endpoint leaves the others intact, and we log which failed.
+    async function getJson(action) {
+      try {
+        const resp = await fetch(APPS_SCRIPT_URL + "?action=" + action + dpQ() + bust, { method: "GET" });
+        return await resp.json();
+      } catch (err) {
+        console.error("Timesheet: load failed for action=" + action + " ->", err);
+        return null;
       }
-      PROJECTS = (activeData.ok && Array.isArray(activeData.projects) && activeData.projects.length > 0)
-        ? activeData.projects : FALLBACK_PROJECTS;
-      ALL_PROJECTS = (allData.ok && Array.isArray(allData.projects) && allData.projects.length > 0)
-        ? allData.projects : PROJECTS.slice();
-      TEAM_EMAILS = (usersData.ok && Array.isArray(usersData.users))
-        ? usersData.users : [];
-      FAQ_ITEMS = (faqData.ok && Array.isArray(faqData.faq))
-        ? faqData.faq : [];
-    } catch (err) {
-      PROJECTS = FALLBACK_PROJECTS;
-      ALL_PROJECTS = FALLBACK_PROJECTS.slice();
-      TEAM_EMAILS = [];
-      FAQ_ITEMS = [];
     }
+    const [activeData, allData, usersData, faqData] = await Promise.all([
+      getJson("projects"), getJson("allProjects"), getJson("users"), getJson("faq")
+    ]);
+    if ((activeData && activeData.error === 'unauthorized') ||
+        (usersData && usersData.error === 'unauthorized')) {
+      dpAuthFailed();
+      return;
+    }
+    if (!activeData || !activeData.ok) {
+      console.warn("Timesheet: projects endpoint returned no data, using the built-in fallback list.",
+                   activeData && activeData.error ? "Server said: " + activeData.error : "");
+    }
+    PROJECTS = (activeData && activeData.ok && Array.isArray(activeData.projects) && activeData.projects.length > 0)
+      ? activeData.projects : FALLBACK_PROJECTS;
+    ALL_PROJECTS = (allData && allData.ok && Array.isArray(allData.projects) && allData.projects.length > 0)
+      ? allData.projects : PROJECTS.slice();
+    TEAM_EMAILS = (usersData && usersData.ok && Array.isArray(usersData.users))
+      ? usersData.users : [];
+    FAQ_ITEMS = (faqData && faqData.ok && Array.isArray(faqData.faq))
+      ? faqData.faq : [];
     buildBilling();
     populateFaqInline();
   }
