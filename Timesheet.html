@@ -119,6 +119,11 @@
   button.submit-btn:disabled { background: #E5E7EB; color: #9CA3AF; cursor: not-allowed; box-shadow: none; transform: none; }
   .err-msg { color: var(--red); font-size: 12px; text-align: center; padding-top: 6px; min-height: 16px; font-weight: 500; }
   .warn-banner { background: var(--amber-soft); border-left: 4px solid var(--amber); padding: 10px 16px; border-radius: 6px; color: var(--navy); font-size: 13px; font-weight: 500; margin-bottom: 16px; }
+  .data-source { padding: 11px 16px; border-radius: 8px; font-size: 12.5px; line-height: 1.55; margin-bottom: 16px; border-left: 4px solid var(--border); }
+  .data-source.live { background: var(--green-bg); border-left-color: var(--green); color: #14532D; }
+  .data-source.fallback { background: var(--amber-soft); border-left-color: var(--amber); color: var(--navy); }
+  .data-source b { font-weight: 700; }
+  .data-source .ds-err { color: var(--muted); font-style: italic; }
   .draft-badge { display: inline-block; background: var(--amber-soft); color: var(--navy); padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 12px; cursor: pointer; }
   .confirm-screen { display: none; background: white; border-radius: 16px; padding: 40px; margin: 24px auto; max-width: 800px; box-shadow: 0 8px 32px rgba(0,0,0,0.08); }
   .confirm-screen.active { display: block; }
@@ -413,6 +418,7 @@
     <button type="button" id="refresh-data-btn" class="refresh-data" title="Reload projects, team list and FAQ from the Google Sheet">↻ Refresh data</button>
   </header>
   <form id="timesheet-form" autocomplete="off">
+    <div id="data-source" class="data-source" style="display:none"></div>
     <div class="card">
       <h2>Who & when <span id="draft-indicator" class="draft-badge" style="display:none">Draft saved · <span id="clear-draft-btn" style="text-decoration: underline">clear</span></span></h2>
       <div class="row-grid">
@@ -627,28 +633,30 @@
     if (APPS_SCRIPT_URL.startsWith("PASTE")) {
       PROJECTS = FALLBACK_PROJECTS;
       ALL_PROJECTS = FALLBACK_PROJECTS.slice();
+      setDataSourceNote(false, "the backend URL is not configured");
       buildBilling();
       return;
     }
-    // Cache-buster keeps the browser from serving a stale copy. We do NOT use
-    // cache:"no-store" here: on the Apps Script /exec 302 redirect it can make
-    // the fetch fail, which then dropped everything to the hardcoded fallback.
-    const bust = "&_ts=" + Date.now();
-    // Fetch each endpoint INDEPENDENTLY. With Promise.all, one failing request
-    // (e.g. faq) rejected the whole batch and blanked projects too. Now a
-    // failure in one endpoint leaves the others intact, and we log which failed.
+    // Fetch EXACTLY like the working Capacity Tracker: a plain GET, no cache
+    // option and no extra query params (the capacity page has neither and
+    // refreshes fine, so caching is not the problem here).
     async function getJson(action) {
       try {
-        const resp = await fetch(APPS_SCRIPT_URL + "?action=" + action + dpQ() + bust, { method: "GET" });
+        const resp = await fetch(APPS_SCRIPT_URL + "?action=" + action + dpQ(), { method: "GET" });
         return await resp.json();
       } catch (err) {
         console.error("Timesheet: load failed for action=" + action + " ->", err);
         return null;
       }
     }
-    const [activeData, allData, usersData, faqData] = await Promise.all([
-      getJson("projects"), getJson("allProjects"), getJson("users"), getJson("faq")
-    ]);
+    // Fetch one at a time, NOT four in parallel. The capacity page makes a
+    // single call and works; firing four at once was the other thing this
+    // page did differently. Sequential is a touch slower but reliable, and a
+    // failure in one endpoint can no longer affect the others.
+    const activeData = await getJson("projects");
+    const allData    = await getJson("allProjects");
+    const usersData  = await getJson("users");
+    const faqData    = await getJson("faq");
     if ((activeData && activeData.error === 'unauthorized') ||
         (usersData && usersData.error === 'unauthorized')) {
       dpAuthFailed();
@@ -658,8 +666,9 @@
       console.warn("Timesheet: projects endpoint returned no data, using the built-in fallback list.",
                    activeData && activeData.error ? "Server said: " + activeData.error : "");
     }
-    PROJECTS = (activeData && activeData.ok && Array.isArray(activeData.projects) && activeData.projects.length > 0)
-      ? activeData.projects : FALLBACK_PROJECTS;
+    const projectsLive = !!(activeData && activeData.ok && Array.isArray(activeData.projects) && activeData.projects.length > 0);
+    setDataSourceNote(projectsLive, (activeData && activeData.error) ? activeData.error : (!activeData ? "the request to the Google Sheet failed" : ""));
+    PROJECTS = projectsLive ? activeData.projects : FALLBACK_PROJECTS;
     ALL_PROJECTS = (allData && allData.ok && Array.isArray(allData.projects) && allData.projects.length > 0)
       ? allData.projects : PROJECTS.slice();
     TEAM_EMAILS = (usersData && usersData.ok && Array.isArray(usersData.users))
@@ -668,6 +677,32 @@
       ? faqData.faq : [];
     buildBilling();
     populateFaqInline();
+  }
+  // Show whether the projects / team list / FAQ came live from the Google
+  // Sheet, or whether the page fell back to its built-in backup list - and,
+  // in that case, exactly what to do about it.
+  function setDataSourceNote(live, serverError) {
+    const el = document.getElementById("data-source");
+    if (!el) return;
+    el.classList.remove("live", "fallback");
+    if (live) {
+      el.classList.add("live");
+      el.innerHTML = "\u2713 <b>Live data.</b> Projects, the team list and the FAQ were loaded from the Google Sheet.";
+    } else {
+      el.classList.add("fallback");
+      el.innerHTML =
+        "\u26a0 <b>Not live - this is a built-in backup list.</b> " +
+        "The projects below may be out of date, and the ad-hoc client requests are not shown. " +
+        (serverError ? '<span class="ds-err">(reason: ' + escapeForHtml(serverError) + ')</span> ' : "") +
+        "<b>What to do:</b> " +
+        "1) click <b>\u21bb Refresh data</b> at the top right; " +
+        "2) if that does not help, hard-refresh the page - <b>Ctrl+Shift+R</b> (Windows) or <b>Cmd+Shift+R</b> (Mac); " +
+        "3) check your internet connection and that you are signed in; " +
+        "4) if it still shows this, the Google Sheet could not be reached or has not been synced yet - " +
+        "tell your project lead so they can run the Monday sync or check the backend. " +
+        "You can still submit, but make sure your project is in the list first.";
+    }
+    el.style.display = "block";
   }
   // Re-pull projects, team list and FAQ from the sheet without a page reload.
   // Saves the current draft first so typed hours survive the rebuild.
