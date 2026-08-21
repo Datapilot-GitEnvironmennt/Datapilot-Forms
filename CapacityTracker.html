@@ -508,12 +508,12 @@
       </div>
       <div class="hstat">
         <div class="n" id="stat-days">0</div>
-        <div class="l">Team load this week</div>
+        <div class="l" id="lbl-days">Team load this week</div>
         <div class="bar"><i id="bar-days" style="width:0%"></i></div>
       </div>
       <div class="hstat">
         <div class="n" id="stat-days-next">0</div>
-        <div class="l">Team load next week</div>
+        <div class="l" id="lbl-days-next">Team load next week</div>
         <div class="bar"><i id="bar-days-next" style="width:0%"></i></div>
       </div>
     </div>
@@ -524,6 +524,11 @@
       <button id="tab-grid" class="active">Planning grid</button>
       <button id="tab-avail">Who's available</button>
       <button id="tab-stats">Stats &amp; projection</button>
+    </div>
+    <div class="chips" id="disp-chips" title="Switch every number between days still FREE and days already BOOKED. Clicking a cell always shows the booked detail per project.">
+      <span class="lbl">Show:</span>
+      <button data-dmode="free"> Free days</button>
+      <button data-dmode="booked"> Booked days</button>
     </div>
     <div class="chips" id="week-chips">
       <span class="lbl">Weeks:</span>
@@ -598,6 +603,7 @@
   ];
 
   const LS_HIDDEN = 'cap_hidden';
+  const LS_DISPMODE = 'cap_dispmode';   // 'free' (default) or 'booked'
 
   const state = {
     entries: [], people: [], projects: [],
@@ -605,7 +611,8 @@
     weekCount: 2, view: 'grid', availWeek: '', loadHorizon: 8, forecastHorizon: 8, actuals: [],
     loadMode: 'planned', loadBack: 0, loadFwd: 8, loadFrom: '', loadTo: '',
     projMode: 'forecast', projType: '', projSearch: '', projSort: 'days',
-    pvaPeriod: 4, pvaCustom: 12, statsOpen: {}, showNP: false
+    pvaPeriod: 4, pvaCustom: 12, statsOpen: {}, showNP: false,
+    dispMode: (lsGet(LS_DISPMODE, 'free') === 'booked' ? 'booked' : 'free')
   };
 
   const editor = {
@@ -711,6 +718,25 @@
   }
   function weekCapacity() { return visiblePeople().length * PERSON_WEEK_CAPACITY; }
 
+  // ---------- free / booked display mode ----------
+  function inFreeMode() { return state.dispMode === 'free'; }
+  // Free (bookable) days for one person-week: 5 minus their planned days.
+  // Congé with nothing planned counts as 0 free (on leave, not bookable) -
+  // the same rule the "Free to book next week" KPI uses.
+  function cellFree(email, week) {
+    const total = cellTotal(email, week);
+    if (cellAvail(email, week) === 'Congé' && total <= 0) return 0;
+    return Math.max(0, PERSON_WEEK_CAPACITY - total);
+  }
+  // Team free days for a week: sum of free days over people who FILLED IN.
+  // People with nothing filled are unknown, so they are not counted - a
+  // floor, not an estimate, exactly like the KPI.
+  function weekFree(week) {
+    let d = 0;
+    visiblePeople().forEach(p => { if (hasFilled(p.email, week)) d += cellFree(p.email, week); });
+    return d;
+  }
+
   // Suggest an availability from the planned days (user can override).
   function suggestAvail(totalDays) {
     if (totalDays <= 0) return 'Disponible';
@@ -748,20 +774,33 @@
     const fPct = vis.length ? Math.round((filled / vis.length) * 100) : 0;
     document.getElementById('bar-filled').style.width = fPct + '%';
 
-    const dPct = cap ? Math.round((days / cap) * 100) : 0;
-    document.getElementById('stat-days').textContent = fmt(days) + ' / ' + fmt(cap) + ' d';
-    const bd = document.getElementById('bar-days');
-    bd.style.width = Math.min(dPct, 100) + '%';
-    bd.classList.toggle('hot', days > cap + 0.001);
-
-    // next week: same capacity denominator, forward-looking load
     const nextWk = addWeeks(wk, 1);
-    const daysNext = weekLoad(nextWk);
-    const nPct = cap ? Math.round((daysNext / cap) * 100) : 0;
-    document.getElementById('stat-days-next').textContent = fmt(daysNext) + ' / ' + fmt(cap) + ' d';
+    const bd = document.getElementById('bar-days');
     const bn = document.getElementById('bar-days-next');
-    bn.style.width = Math.min(nPct, 100) + '%';
-    bn.classList.toggle('hot', daysNext > cap + 0.001);
+    if (inFreeMode()) {
+      const freeNow = weekFree(wk);
+      const freeNext = weekFree(nextWk);
+      document.getElementById('lbl-days').textContent = 'Team free this week';
+      document.getElementById('stat-days').textContent = fmt(freeNow) + ' d free';
+      bd.style.width = (cap ? Math.min(Math.round((freeNow / cap) * 100), 100) : 0) + '%';
+      bd.classList.remove('hot');
+      document.getElementById('lbl-days-next').textContent = 'Team free next week';
+      document.getElementById('stat-days-next').textContent = fmt(freeNext) + ' d free';
+      bn.style.width = (cap ? Math.min(Math.round((freeNext / cap) * 100), 100) : 0) + '%';
+      bn.classList.remove('hot');
+    } else {
+      const dPct = cap ? Math.round((days / cap) * 100) : 0;
+      document.getElementById('lbl-days').textContent = 'Team load this week';
+      document.getElementById('stat-days').textContent = fmt(days) + ' / ' + fmt(cap) + ' d';
+      bd.style.width = Math.min(dPct, 100) + '%';
+      bd.classList.toggle('hot', days > cap + 0.001);
+      const daysNext = weekLoad(nextWk);
+      const nPct = cap ? Math.round((daysNext / cap) * 100) : 0;
+      document.getElementById('lbl-days-next').textContent = 'Team load next week';
+      document.getElementById('stat-days-next').textContent = fmt(daysNext) + ' / ' + fmt(cap) + ' d';
+      bn.style.width = Math.min(nPct, 100) + '%';
+      bn.classList.toggle('hot', daysNext > cap + 0.001);
+    }
 
     document.getElementById('legend-max').textContent = PERSON_WEEK_CAPACITY;
   }
@@ -773,11 +812,13 @@
     wks.forEach((w, i) => {
       const load = weekLoad(w);
       const cap = weekCapacity();
-      const pct = cap ? Math.min(Math.round((load / cap) * 100), 100) : 0;
-      const hot = load > cap + 0.001;
+      const freeW = weekFree(w);
+      const pct = cap ? Math.min(Math.round(((inFreeMode() ? freeW : load) / cap) * 100), 100) : 0;
+      const hot = !inFreeMode() && load > cap + 0.001;
+      const loadTxt = inFreeMode() ? fmt(freeW) + ' d free' : fmt(load) + ' / ' + fmt(cap) + ' d';
       html += '<th>' + fmtWeek(w) +
         '<span class="wk-badge">' + weekBadge(i) + '</span>' +
-        '<span class="load">' + fmt(load) + ' / ' + fmt(cap) + ' d</span>' +
+        '<span class="load">' + loadTxt + '</span>' +
         '<span class="loadbar"><i class="' + (hot ? 'hot' : '') + '" style="width:' + pct + '%"></i></span>' +
         '</th>';
     });
@@ -786,11 +827,12 @@
     visiblePeople().forEach(p => {
       html += '<tr>';
       html += '<td class="person-cell">' + esc(p.name) + '</td>';
-      let rowTotal = 0;
+      let rowTotal = 0, rowFree = 0;
       wks.forEach(w => {
         const lines = realLines(p.email, w);
         const total = cellTotal(p.email, w);
         rowTotal += total;
+        if (hasFilled(p.email, w)) rowFree += cellFree(p.email, w);
         const avail = cellAvail(p.email, w);
         const over = total > PERSON_WEEK_CAPACITY + 0.001;
         const isConge = avail === 'Congé' && lines.length === 0;
@@ -801,6 +843,13 @@
         let inner;
         if (lines.length === 0 && !avail) {
           inner = '<span class="plus">+</span>';
+        } else if (inFreeMode()) {
+          const freeD = cellFree(p.email, w);
+          const subBits = [];
+          if (avail) subBits.push(esc(avail));
+          if (lines.length > 0) subBits.push(lines.length + ' project' + (lines.length > 1 ? 's' : ''));
+          inner = '<div class="tot">' + emojiOf(avail) + ' ' + fmt(freeD) + ' d free' + (over ? ' ⚠' : '') + '</div>' +
+                  '<div class="sub">' + subBits.join(' · ') + '</div>';
         } else if (lines.length === 0) {
           inner = '<div class="tot">' + emojiOf(avail) + '</div><div class="sub">' + esc(avail) + '</div>';
         } else {
@@ -812,7 +861,7 @@
           'title="Click to edit">' +
           inner + '</button></td>';
       });
-      html += '<td class="total-cell">' + fmt(rowTotal) + ' d</td>';
+      html += '<td class="total-cell">' + (inFreeMode() ? fmt(rowFree) + ' d free' : fmt(rowTotal) + ' d') + '</td>';
       html += '</tr>';
     });
     html += '</tbody></table></div>';
@@ -873,8 +922,11 @@
       html += '<div class="avail-col"><h3><span>' + a.emoji + ' ' + a.key + '</span><span class="cnt">' + list.length + '</span></h3>';
       if (list.length === 0) html += '<div class="avail-empty">Nobody</div>';
       list.forEach(x => {
-        const free = Math.max(0, PERSON_WEEK_CAPACITY - x.total);
-        html += availPill(x.p.name, x.p.email, state.availWeek, fmt(x.total) + ' d · ' + fmt(free) + ' free');
+        const free = cellFree(x.p.email, state.availWeek);
+        const right = inFreeMode()
+          ? fmt(free) + ' d free · ' + fmt(x.total) + ' booked'
+          : fmt(x.total) + ' d · ' + fmt(free) + ' free';
+        html += availPill(x.p.name, x.p.email, state.availWeek, right);
       });
       html += '</div>';
     });
@@ -1295,10 +1347,19 @@
       freeNext > 0 ? 'good' : 'warn', '',
       infoIcon('Days still bookable next week: for each person who filled in, <b>5 minus their planned days</b>. People on Cong\u00e9 count as 0. People who have not filled in are NOT counted, so this is a floor, not an estimate.<br><b>Needs:</b> everyone fills their next week.',
                'Ana\u00efs / Anne-Ga\u00eblle before answering a client, managers before taking new work.'));
-    html += scardHtml(bookedNextPct + '%', 'Booked next week',
-      fmt(weekLoad(nextW)) + ' of ' + fmt(cap) + ' d', bookedNextPct > 100 ? 'warn' : '', '',
-      infoIcon('Share of total team capacity (visible people \u00d7 5 d) already planned for next week. Over <b>100%</b> means the team as a whole is overbooked.',
-               'managers, for a one-glance load check.'));
+    if (inFreeMode()) {
+      const freeNextPct = cap ? Math.max(0, 100 - bookedNextPct) : 0;
+      const freeNextDays = Math.max(0, cap - weekLoad(nextW));
+      html += scardHtml(freeNextPct + '%', 'Free next week',
+        fmt(freeNextDays) + ' of ' + fmt(cap) + ' d still open', bookedNextPct > 100 ? 'warn' : '', '',
+        infoIcon('Share of total team capacity (visible people \u00d7 5 d) NOT yet planned for next week. <b>0%</b> with a warning means the team as a whole is overbooked.',
+                 'managers, for a one-glance availability check.'));
+    } else {
+      html += scardHtml(bookedNextPct + '%', 'Booked next week',
+        fmt(weekLoad(nextW)) + ' of ' + fmt(cap) + ' d', bookedNextPct > 100 ? 'warn' : '', '',
+        infoIcon('Share of total team capacity (visible people \u00d7 5 d) already planned for next week. Over <b>100%</b> means the team as a whole is overbooked.',
+                 'managers, for a one-glance load check.'));
+    }
     html += scardHtml(crunch ? fmtWeek(crunch) : 'none', 'First crunch week',
       crunch ? 'load reaches 90% of capacity' : 'no week over 90% in horizon',
       crunch ? 'warn' : 'good', '',
@@ -1927,6 +1988,19 @@
   document.getElementById('tab-grid').addEventListener('click', () => switchTab('grid', 'tab-grid'));
   document.getElementById('tab-avail').addEventListener('click', () => switchTab('avail', 'tab-avail'));
   document.getElementById('tab-stats').addEventListener('click', () => switchTab('stats', 'tab-stats'));
+  function syncDispChips() {
+    document.querySelectorAll('#disp-chips button').forEach(b =>
+      b.classList.toggle('on', b.dataset.dmode === state.dispMode));
+  }
+  document.querySelectorAll('#disp-chips button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.dispMode = btn.dataset.dmode;
+      lsSet(LS_DISPMODE, state.dispMode);
+      syncDispChips();
+      render();
+    });
+  });
+  syncDispChips();
   document.getElementById('refresh-btn').addEventListener('click', () => load(false));
   document.getElementById('people-btn').addEventListener('click', e => { e.stopPropagation(); togglePeoplePanel(); });
   document.getElementById('people-all').addEventListener('click', () => {
