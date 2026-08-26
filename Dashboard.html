@@ -142,6 +142,7 @@
   table.detail thead th .ar { opacity: 0.6; font-size: 10px; }
   table.detail tbody tr:nth-child(even) { background: var(--sub-bg); }
   table.detail td.num { text-align: right; font-weight: 600; color: var(--navy); white-space: nowrap; }
+  table.detail td.cmt { max-width: 340px; color: var(--muted); white-space: normal; }
   .badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.3px; }
   .b-sprint { background: #DBEAFE; color: #1E40AF; }
   .b-regie { background: #FEF3C7; color: #92400E; }
@@ -297,7 +298,7 @@
         const hasProj = !!(t.project && t.project.trim());
         out.push({
           email: normEmail(t.email), name: nameOf(t.email), week: t.week || '',
-          category: t.category || '', task: t.task || '', avail: '',
+          category: t.category || '', task: t.task || '', avail: '', comment: t.lineComment || '',
           projLabel: hasProj ? cleanProject(t.project) : (t.task || t.category || '(unspecified)'),
           ptype: hasProj ? projectType(t.project) : '',
           days: t.days || 0, hours: (typeof t.hours === 'number' ? t.hours : (t.days || 0) * DAY_HOURS)
@@ -308,7 +309,7 @@
         const hasProj = !!(c.project && c.project.trim());
         out.push({
           email: normEmail(c.email), name: c.name || nameOf(c.email), week: c.week || '',
-          category: 'Planned', task: '', avail: c.availability || '',
+          category: 'Planned', task: '', avail: c.availability || '', comment: c.comment || '',
           projLabel: hasProj ? cleanProject(c.project) : (c.availability || '(unspecified)'),
           ptype: hasProj ? projectType(c.project) : '',
           days: c.days || 0, hours: (c.days || 0) * DAY_HOURS
@@ -537,8 +538,8 @@
     const sec = document.getElementById('sec-detail');
     const planned = F.source !== 'actual';
     const cols = planned
-      ? [['name', 'Person'], ['projLabel', 'Project'], ['ptype', 'Type'], ['avail', 'Availability'], ['week', 'Week'], ['value', F.unit === 'days' ? 'Days' : 'Hours']]
-      : [['name', 'Person'], ['projLabel', 'Project'], ['ptype', 'Type'], ['category', 'Category'], ['task', 'Task / activity'], ['week', 'Week'], ['value', F.unit === 'days' ? 'Days' : 'Hours']];
+      ? [['name', 'Person'], ['projLabel', 'Project'], ['ptype', 'Type'], ['avail', 'Availability'], ['week', 'Week'], ['value', F.unit === 'days' ? 'Days' : 'Hours'], ['comment', 'Comment']]
+      : [['name', 'Person'], ['projLabel', 'Project'], ['ptype', 'Type'], ['category', 'Category'], ['task', 'Task / activity'], ['week', 'Week'], ['value', F.unit === 'days' ? 'Days' : 'Hours'], ['comment', 'Comment']];
     const dir = F.sortDir; const key = F.sortKey;
     const sorted = rows.slice().sort((a, b) => {
       let av = a[key], bv = b[key];
@@ -558,6 +559,7 @@
         else if (k === 'category') h += '<td>' + (r.category ? '<span class="badge ' + catClass(r.category) + '">' + esc(r.category) + '</span>' : '') + '</td>';
         else if (k === 'name') h += '<td>' + esc(r.name) + '</td>';
         else if (k === 'week') h += '<td>' + esc(r.week) + '</td>';
+        else if (k === 'comment') h += '<td class="cmt">' + esc(r.comment || '') + '</td>';
         else h += '<td>' + esc(r[k] || '') + '</td>';
       });
       h += '</tr>';
