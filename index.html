@@ -105,6 +105,7 @@
   .card-pink  { --accent: var(--pink);  --accent-bg: rgba(216, 123, 137, 0.14); }
   .card-navy  { --accent: var(--navy);  --accent-bg: rgba(15, 42, 61, 0.09); }
   .card-green { --accent: #16A34A;      --accent-bg: rgba(22, 163, 74, 0.12); }
+  .card-violet{ --accent: #7C5CBF;      --accent-bg: rgba(124, 92, 191, 0.13); }
   /* everything inside paints above the glow */
   .form-card > * { position: relative; z-index: 1; }
   /* left accent stripe */
@@ -344,6 +345,27 @@
       <p>Let's plan our next week. Click your cell, fill it in(everyone can edit).</p>
       <span class="arrow">
         Open planner
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </span>
+    </a>
+    <a href="./Dashboard.html" class="form-card card-violet">
+      <div class="card-top">
+        <div class="icon">
+          <!-- Pie chart / analytics icon -->
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+            <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+          </svg>
+        </div>
+        <span class="tag">Insights</span>
+      </div>
+      <h2>Team Dashboard</h2>
+      <p>See who works on what, from the timesheet or the capacity plan. Filter by person, project, week and more.</p>
+      <span class="arrow">
+        Open dashboard
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="5" y1="12" x2="19" y2="12"></line>
           <polyline points="12 5 19 12 12 19"></polyline>
